@@ -48,7 +48,6 @@ export type GameState = {
     zoomPercent: ZoomPercent;
     inventoryPinned: boolean;
   };
-  completionNotified: Record<ContentPageId, boolean>;
   endingSeen: boolean;
 };
 
@@ -72,6 +71,5 @@ export type GameAction =
   | { type: "DEFEAT_BOSS" }
   | { type: "RESCUE_PRINCESS" }
   | { type: "REPLAY_ADVENTURE" }
-  | { type: "MARK_COMPLETION_NOTIFIED"; page: ContentPageId }
   | { type: "MARK_ENDING_SEEN" }
   | { type: "RESET_GAME" };

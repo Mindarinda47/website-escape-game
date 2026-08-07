@@ -1,8 +1,5 @@
 import { useState } from "react";
 import { useGameState } from "../state/GameStateContext";
-import type { ContentPageId } from "../state/types";
-
-type Props = { onShowCompletion: (page: ContentPageId) => void };
 type Product = { id: string; name: string; price: string; icon: string; tone: string };
 
 const products: Product[] = [
@@ -16,7 +13,7 @@ const products: Product[] = [
   { id: "notebook", name: "다음 장 노트", price: "6,200원", icon: "▤", tone: "slate" },
 ];
 
-export function ShopPage({ onShowCompletion }: Props) {
+export function ShopPage() {
   const { state, dispatch, notify } = useGameState();
   const [detail, setDetail] = useState<Product | null>(null);
 
@@ -29,7 +26,7 @@ export function ShopPage({ onShowCompletion }: Props) {
   function collectLetter(clue: "shop-t" | "shop-l", letter: string) {
     if (state.collectedLetters[clue]) return;
     dispatch({ type: "COLLECT_LETTER", clue });
-    notify(`문자 단서 ${letter}를 발견했습니다.`);
+    notify(`문자 단서 ${letter}를 획득했습니다.`);
   }
 
   function openProduct(product: Product) {
@@ -39,7 +36,7 @@ export function ShopPage({ onShowCompletion }: Props) {
 
   return (
     <main className="shop-page page-inner">
-      <header className="site-header shop-header"><div><span className="site-kicker">오늘을 모으는 상점</span><h1>모아상점</h1></div><div className="shop-tools"><span>오늘의 랭킹</span><span>장바구니 0</span></div></header>
+      <header className="site-header shop-header"><div><span className="site-kicker">오늘을 모으는 상점</span><h1>GOGLE SHOP</h1></div><div className="shop-tools"><span>오늘의 랭킹</span><span>장바구니 0</span></div></header>
       <div className="notice-bar">재고가 <mark>마지막</mark> 하나뿐인 상품도 있습니다.</div>
       <section className="product-grid" aria-label="추천 상품">
         {products.map((product, index) => (
@@ -54,7 +51,6 @@ export function ShopPage({ onShowCompletion }: Props) {
           <button className="last-one" disabled={state.collectedLetters["shop-l"]} onClick={() => collectLetter("shop-l", "L")}><b>L</b>ast one</button>
         </section>
       )}
-      {state.completionNotified.shop && <button className="replay-message" onClick={() => onShowCompletion("shop")}>완료 메시지 다시 보기</button>}
 
       {detail && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>

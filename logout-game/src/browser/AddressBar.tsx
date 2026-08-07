@@ -27,7 +27,7 @@ export function AddressBar() {
   function collectSportsLetter() {
     if (state.collectedLetters["sports-o"]) return;
     dispatch({ type: "COLLECT_LETTER", clue: "sports-o" });
-    notify("문자 단서 O를 발견했습니다.");
+    notify("문자 단서 O를 획득했습니다.");
   }
 
   function submit() {

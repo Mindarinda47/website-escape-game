@@ -19,7 +19,7 @@ export const pageLetters: Record<ContentPageId, LetterClueId[]> = {
 export const pageTitles: Record<PageId, string> = {
   portal: "GOGLE",
   news: "새벽일보",
-  shop: "모아상점",
+  shop: "GOGLE SHOP",
   sports: "하프타임 스포츠",
   "ad-game": "빛의 모험",
 };

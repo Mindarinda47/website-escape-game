@@ -1,10 +1,7 @@
 import { useGameState } from "../state/GameStateContext";
-import type { ContentPageId } from "../state/types";
 import wildfireImage from "../image/산불.png";
 import extinguishedWildfireImage from "../image/산불_꺼진상태.png";
 import invertedWildfireImage from "../image/산불_반전.png";
-
-type Props = { onShowCompletion: (page: ContentPageId) => void };
 
 const relatedStories = [
   {
@@ -24,7 +21,7 @@ const relatedStories = [
   },
 ];
 
-export function NewsPage({ onShowCompletion }: Props) {
+export function NewsPage() {
   const { state, dispatch, notify } = useGameState();
   const canSeeLetter = state.news.fireExtinguished && state.browser.darkMode;
   const articleImage = !state.news.fireExtinguished
@@ -48,7 +45,7 @@ export function NewsPage({ onShowCompletion }: Props) {
   function collectO() {
     if (state.collectedLetters["news-o"]) return;
     dispatch({ type: "COLLECT_LETTER", clue: "news-o" });
-    notify("문자 단서 O를 발견했습니다.");
+    notify("문자 단서 O를 획득했습니다.");
   }
 
   return (
@@ -76,7 +73,6 @@ export function NewsPage({ onShowCompletion }: Props) {
         </article>
         <aside className="related-news"><h2>이어지는 오늘</h2>{relatedStories.map((story) => <article key={story.title}><span>{story.tag}</span><h3>{story.title}</h3><p>{story.excerpt}</p><small>오늘 · 3분 전</small></article>)}</aside>
       </div>
-      {state.completionNotified.news && <button className="replay-message" onClick={() => onShowCompletion("news")}>완료 메시지 다시 보기</button>}
     </main>
   );
 }

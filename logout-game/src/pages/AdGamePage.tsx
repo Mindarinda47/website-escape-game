@@ -1,10 +1,6 @@
 import { AdventureCanvas } from "../minigame/AdventureCanvas";
 import { useGameState } from "../state/GameStateContext";
-import type { ContentPageId } from "../state/types";
-
-type Props = { onShowCompletion: (page: ContentPageId) => void };
-
-export function AdGamePage({ onShowCompletion }: Props) {
+export function AdGamePage() {
   const { state, dispatch, notify } = useGameState();
 
   function insertCoin() {
@@ -30,7 +26,6 @@ export function AdGamePage({ onShowCompletion }: Props) {
       ) : state.adGame.checkpoint === "clear" ? (
         <section className="adventure-clear"><div className="shield-reward" aria-hidden="true"><span>G</span></div><span className="pixel-label">QUEST COMPLETE</span><h2>ADVENTURE SAVED</h2><p>작은 활과 방패는 화면을 건너 당신의 기록에 남았습니다.</p><div className="modal-actions"><button className="button primary" onClick={() => dispatch({ type: "REPLAY_ADVENTURE" })}>REPLAY</button><button className="button ghost" onClick={() => dispatch({ type: "NAVIGATE", page: "portal" })}>포털로 돌아가기</button></div></section>
       ) : <AdventureCanvas />}
-      {state.completionNotified["ad-game"] && <button className="replay-message" onClick={() => onShowCompletion("ad-game")}>완료 메시지 다시 보기</button>}
     </main>
   );
 }

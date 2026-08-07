@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useGameState } from "../state/GameStateContext";
-import type { ContentPageId } from "../state/types";
-
-type Props = { onShowCompletion: (page: ContentPageId) => void };
 type Prediction = "home" | "draw" | "away";
 
 const MATCH_SECONDS = 12;
 
-export function SportsPage({ onShowCompletion }: Props) {
+export function SportsPage() {
   const { state, dispatch, notify } = useGameState();
   const [running, setRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -57,7 +54,6 @@ export function SportsPage({ onShowCompletion }: Props) {
 
       {matchDone && <section className={`match-result ${state.sports.predictionWasCorrect ? "correct" : "participated"}`}><div className="result-badge">{state.sports.predictionWasCorrect ? "예측 성공" : "경기 참여"}</div><div><h2>{state.sports.predictionWasCorrect ? "예측이 맞았습니다." : "예측은 빗나갔습니다."}</h2><p>하지만 당신이 선택했기 때문에 경기는 시작되었습니다.</p><p className="coin-note">◎ 레트로 게임 코인이 인벤토리에 지급되었습니다.</p></div><button className="button ghost" onClick={() => { setSeconds(0); dispatch({ type: "START_MATCH", prediction: state.sports.prediction ?? "home" }); setRunning(true); }}>경기 다시 보기</button></section>}
 
-      {state.completionNotified.sports && <button className="replay-message" onClick={() => onShowCompletion("sports")}>완료 메시지 다시 보기</button>}
     </main>
   );
 }

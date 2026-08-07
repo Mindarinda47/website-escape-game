@@ -20,7 +20,6 @@ export function loadGameState(storage: Pick<Storage, "getItem"> = localStorage):
       sports: { ...initialState.sports, ...parsed.sports },
       adGame: { ...initialState.adGame, ...parsed.adGame },
       browser: { ...initialState.browser, ...parsed.browser },
-      completionNotified: { ...initialState.completionNotified, ...parsed.completionNotified },
     };
   } catch {
     return initialState;

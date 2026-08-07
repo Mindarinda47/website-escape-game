@@ -31,6 +31,5 @@ export const initialState: GameState = {
     princessRescued: false,
   },
   browser: { darkMode: false, zoomPercent: 100, inventoryPinned: false },
-  completionNotified: { news: false, shop: false, sports: false, "ad-game": false },
   endingSeen: false,
 };

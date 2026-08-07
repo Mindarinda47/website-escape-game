@@ -5,18 +5,16 @@ import { PortalPage } from "../pages/PortalPage";
 import { ShopPage } from "../pages/ShopPage";
 import { SportsPage } from "../pages/SportsPage";
 import { useGameState } from "../state/GameStateContext";
-import type { ContentPageId } from "../state/types";
 import { BrowserToolbar } from "./BrowserToolbar";
 import { FindInPage } from "./FindInPage";
 import { InventoryDrawer } from "./InventoryDrawer";
 
 type Props = {
   onEndingAnswer: () => void;
-  onShowCompletion: (page: ContentPageId) => void;
   onReset: () => void;
 };
 
-export function BrowserShell({ onEndingAnswer, onShowCompletion, onReset }: Props) {
+export function BrowserShell({ onEndingAnswer, onReset }: Props) {
   const { state, dispatch } = useGameState();
   const [findOpen, setFindOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -43,10 +41,10 @@ export function BrowserShell({ onEndingAnswer, onShowCompletion, onReset }: Prop
 
   let page;
   switch (state.currentPage) {
-    case "news": page = <NewsPage onShowCompletion={onShowCompletion} />; break;
-    case "shop": page = <ShopPage onShowCompletion={onShowCompletion} />; break;
-    case "sports": page = <SportsPage onShowCompletion={onShowCompletion} />; break;
-    case "ad-game": page = <AdGamePage onShowCompletion={onShowCompletion} />; break;
+    case "news": page = <NewsPage />; break;
+    case "shop": page = <ShopPage />; break;
+    case "sports": page = <SportsPage />; break;
+    case "ad-game": page = <AdGamePage />; break;
     default: page = <PortalPage onEndingAnswer={onEndingAnswer} />;
   }
 

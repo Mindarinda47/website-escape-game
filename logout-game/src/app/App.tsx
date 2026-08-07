@@ -1,28 +1,13 @@
 import { useState } from "react";
 import { BrowserShell } from "../browser/BrowserShell";
-import { CompletionModal } from "../components/CompletionModal";
 import { ToastRegion } from "../components/ToastRegion";
 import { useGameState } from "../state/GameStateContext";
-import { selectPageCompleted } from "../state/selectors";
-import type { ContentPageId } from "../state/types";
 
 export function App() {
   const { state, dispatch } = useGameState();
   const [introOpen, setIntroOpen] = useState(() => !Object.values(state.visitedPages).some(Boolean) && !state.endingSeen);
   const [endingConfirmOpen, setEndingConfirmOpen] = useState(false);
   const [endingActive, setEndingActive] = useState(state.endingSeen);
-  const [manualCompletion, setManualCompletion] = useState<ContentPageId | null>(null);
-
-  const currentContentPage = state.currentPage === "portal" ? null : state.currentPage;
-  const autoCompletion = currentContentPage && selectPageCompleted(state, currentContentPage) && !state.completionNotified[currentContentPage] ? currentContentPage : null;
-  const completionPage = manualCompletion ?? autoCompletion;
-
-  function closeCompletion(goHome: boolean) {
-    if (!completionPage) return;
-    if (autoCompletion === completionPage) dispatch({ type: "MARK_COMPLETION_NOTIFIED", page: completionPage });
-    setManualCompletion(null);
-    if (goHome) dispatch({ type: "NAVIGATE", page: "portal" });
-  }
 
   function startEnding() {
     dispatch({ type: "MARK_ENDING_SEEN" });
@@ -36,10 +21,9 @@ export function App() {
 
   return (
     <>
-      <BrowserShell onEndingAnswer={() => setEndingConfirmOpen(true)} onShowCompletion={setManualCompletion} onReset={() => setIntroOpen(true)} />
+      <BrowserShell onEndingAnswer={() => setEndingConfirmOpen(true)} onReset={() => setIntroOpen(true)} />
       <ToastRegion />
       {introOpen && <div className="intro-overlay"><section className="intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title"><span className="intro-symbol">⌁</span><h1 id="intro-title">당신은 웹사이트에 갇혔다.</h1><p>페이지를 탐색해 나가는 방법을 찾아라.</p><button className="button primary" onClick={() => setIntroOpen(false)}>포털 열기</button><small>마우스와 키보드로 브라우저의 모든 기능을 사용할 수 있습니다.</small></section></div>}
-      {completionPage && <CompletionModal page={completionPage} onClose={() => closeCompletion(false)} onHome={() => closeCompletion(true)} />}
       {endingConfirmOpen && <div className="modal-backdrop"><section className="confirm-modal ending-confirm" role="dialog" aria-modal="true" aria-labelledby="ending-confirm-title"><span className="eyebrow">검색 결과</span><h2 id="ending-confirm-title">세션을 종료하시겠습니까?</h2><p>지금까지의 진행은 이 선택을 확인하기 전까지 그대로 유지됩니다.</p><div className="modal-actions"><button className="button primary" onClick={startEnding}>예</button><button className="button ghost" onClick={() => setEndingConfirmOpen(false)}>아니오</button></div></section></div>}
     </>
   );

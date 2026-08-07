@@ -82,8 +82,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, adGame: { ...state.adGame, princessRescued: true, checkpoint: "clear" } };
     case "REPLAY_ADVENTURE":
       return { ...state, adGame: { ...state.adGame, checkpoint: "start" } };
-    case "MARK_COMPLETION_NOTIFIED":
-      return { ...state, completionNotified: { ...state.completionNotified, [action.page]: true } };
     case "MARK_ENDING_SEEN":
       return { ...state, endingSeen: true };
     case "RESET_GAME":

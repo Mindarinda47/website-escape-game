@@ -83,7 +83,7 @@ export function AdventureCanvas() {
       if (runtime.scene === "light-room" && runtime.switchHits >= 2 && distance(runtime.player, { x: 510, y: 180 }) < 72) {
         if (!state.collectedLetters["game-u"]) {
           dispatch({ type: "COLLECT_LETTER", clue: "game-u" });
-          notify("빛의 활에서 문자 단서 U를 발견했습니다.");
+          notify("문자 단서 U를 획득했습니다.");
         }
         transition("boss");
       }
@@ -91,7 +91,7 @@ export function AdventureCanvas() {
         transitionLockedRef.current = true;
         if (!state.collectedLetters["game-g"]) {
           dispatch({ type: "COLLECT_LETTER", clue: "game-g" });
-          notify("황금 방패에서 문자 단서 G를 발견했습니다.");
+          notify("문자 단서 G를 획득했습니다.");
         }
         dispatch({ type: "RESCUE_PRINCESS" });
       }

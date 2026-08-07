@@ -3,16 +3,24 @@ import { useGameState } from "../state/GameStateContext";
 import { isEndingAnswer, selectPageCompleted } from "../state/selectors";
 import type { PageId } from "../state/types";
 import wildfireImage from "../image/산불.png";
+import extinguishedWildfireImage from "../image/산불_꺼진상태.png";
+import shopThumbnailImage from "../image/쇼핑몰썸네일.png";
+import youthEmploymentImage from "../image/청년_취업난.png";
 
 type Props = { onEndingAnswer: () => void };
 
 const newsBriefs = [
-  { category: "사회", title: "취업 준비 길어지는 대한민국 청년들… 첫 경력의 문턱도 높아졌다", time: "18분 전" },
+  { category: "사회", title: "취업 준비 길어지는 대한민국 청년들… 첫 경력의 문턱도 높아졌다", time: "18분 전", image: youthEmploymentImage },
   { category: "문화", title: "밤의 도서관에서 시작된 조용한 전시", time: "32분 전" },
   { category: "생활", title: "창가에 두기 좋은 작은 식물 다섯 가지", time: "1시간 전" },
 ];
 
 const trending = ["유감산 산불", "산불", "코스피", "칠성전자", "항공권", "날씨", "폭염", "화재", "워터파크", "게임"];
+const trendDirections = trending.map(() => {
+  const direction = Math.random();
+  if (direction < 1 / 3) return "―";
+  return direction < 2 / 3 ? "↑" : "↓";
+});
 
 export function PortalPage({ onEndingAnswer }: Props) {
   const { state, dispatch } = useGameState();
@@ -63,11 +71,11 @@ export function PortalPage({ onEndingAnswer }: Props) {
           <div className="section-heading"><div><span>HEADLINE</span><h2 id="portal-news-title">오늘의 뉴스</h2></div><time>오늘</time></div>
           <div className="headline-layout">
             <button className={`headline-story portal-destination ${newsCompleted ? "completed" : ""}`} onClick={() => open("news")}>
-              <span className="headline-art" aria-hidden="true"><img src={wildfireImage} alt="" /></span>
+              <span className="headline-art" aria-hidden="true"><img src={state.news.fireExtinguished ? extinguishedWildfireImage : wildfireImage} alt="" /></span>
               <span className="headline-copy"><small>새벽일보 · 속보</small><strong>[속보] 유감산 대형산불… “화재 진압에 총동원”</strong><span>짙은 연기로 가려진 산등성이의 현재 상황을 전합니다.</span></span>
             </button>
             <div className="news-brief-list">
-              {newsBriefs.map((brief, index) => <article key={brief.title}><span className={`brief-thumb thumb-${index + 1}`} aria-hidden="true" /><div><small>{brief.category}</small><h3>{brief.title}</h3><time>{brief.time}</time></div></article>)}
+              {newsBriefs.map((brief, index) => <article key={brief.title}><span className={`brief-thumb thumb-${index + 1}`} aria-hidden="true">{"image" in brief && brief.image ? <img src={brief.image} alt="" /> : null}</span><div><small>{brief.category}</small><h3>{brief.title}</h3><time>{brief.time}</time></div></article>)}
             </div>
           </div>
         </section>
@@ -79,7 +87,7 @@ export function PortalPage({ onEndingAnswer }: Props) {
           </section>
           <section className="trending-widget">
             <div className="widget-heading"><h2>실시간 검색</h2><time>오늘</time></div>
-            <ol>{trending.map((term, index) => <li key={term}><b>{index + 1}</b><span>{term}</span><small>{index % 2 === 0 ? "―" : "↑"}</small></li>)}</ol>
+            <ol>{trending.map((term, index) => <li key={term}><b>{index + 1}</b><span>{term}</span><small>{trendDirections[index]}</small></li>)}</ol>
           </section>
         </aside>
 
@@ -89,8 +97,8 @@ export function PortalPage({ onEndingAnswer }: Props) {
               <div className="section-heading"><div><span>LIFE</span><h2 id="portal-life-title">라이프스타일</h2></div><p>오늘 둘러볼 만한 것들</p></div>
               <div className="life-grid">
                 <button className={`shop-feature portal-destination ${shopCompleted ? "completed" : ""}`} onClick={() => open("shop")}>
-                  <span className="shop-feature-art" aria-hidden="true"><i>◒</i><i>✦</i><i>♧</i></span>
-                  <span><small>모아상점</small><strong>오늘 도착한 물건들</strong><span>새로 들어온 상품과 오래 머문 물건들을 소개합니다.</span></span>
+                  <span className="shop-feature-art" aria-hidden="true"><img src={shopThumbnailImage} alt="" /></span>
+                  <span><small>GOGLE SHOP</small><strong>오늘 도착한 물건들</strong><span>새로 들어온 상품과 오래 머문 물건들을 소개합니다.</span></span>
                 </button>
                 <article className="static-life-card"><span className="static-art reading-art">▤</span><small>책과 문장</small><h3>다음 장을 천천히 여는 방법</h3><p>오늘의 짧은 읽을거리 · 4분</p></article>
                 <article className="static-life-card"><span className="static-art room-art">⌂</span><small>공간</small><h3>아침빛이 오래 머무는 방</h3><p>작은 집 기록 · 사진 8장</p></article>
