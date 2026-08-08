@@ -1,0 +1,53 @@
+import { describe, expect, it, vi } from "vitest";
+import { createRuntime, movePlayer, performAttack, updateEnemies } from "../minigame/engine";
+
+describe("G의 전설 엔진", () => {
+  it("allows only one movement axis when diagonal keys are held", () => {
+    const runtime = createRuntime("world", 6, 6, { x: 400, y: 240 });
+    runtime.player.direction = "down";
+    movePlayer(runtime, new Set(["d", "s"]), 0.1, []);
+    expect(runtime.player.x).toBe(400);
+    expect(runtime.player.y).toBeGreaterThan(240);
+  });
+
+  it("defeats a normal enemy in three basic hits or two great-sword hits", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    try {
+      const basic = createRuntime("dungeon", 6, 6, { x: 100, y: 100 });
+      basic.player.direction = "right";
+      basic.enemies = [basic.enemies[0]];
+      Object.assign(basic.enemies[0], { x: 142, y: 100 });
+      for (let hit = 0; hit < 2; hit += 1) {
+        performAttack(basic, 1);
+        basic.attackCooldown = 0;
+      }
+      expect(basic.enemies).toHaveLength(1);
+      performAttack(basic, 1);
+      expect(basic.enemies).toHaveLength(0);
+
+      const great = createRuntime("dungeon", 6, 6, { x: 100, y: 100 });
+      great.player.direction = "right";
+      great.enemies = [great.enemies[0]];
+      Object.assign(great.enemies[0], { x: 142, y: 100 });
+      performAttack(great, 2);
+      great.attackCooldown = 0;
+      performAttack(great, 2);
+      expect(great.enemies).toHaveLength(0);
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  it("gives ranged enemies a projectile attack pattern", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    try {
+      const runtime = createRuntime("dungeon", 6, 6, { x: 400, y: 240 });
+      runtime.enemies = [runtime.enemies.find((enemy) => enemy.kind === "ranged")!];
+      runtime.enemies[0].cooldown = 0;
+      updateEnemies(runtime, 0.1, []);
+      expect(runtime.projectiles.length).toBeGreaterThan(0);
+    } finally {
+      random.mockRestore();
+    }
+  });
+});

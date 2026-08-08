@@ -19,4 +19,10 @@ describe("state persistence", () => {
     expect(loadGameState({ getItem: () => "{broken" })).toEqual(initialState);
     expect(loadGameState({ getItem: () => JSON.stringify({ version: 99 }) })).toEqual(initialState);
   });
+
+  it("moves legacy minigame checkpoints back to the new village", () => {
+    const loaded = loadGameState({ getItem: () => JSON.stringify({ version: 1, adGame: { checkpoint: "start", level: 4 } }) });
+    expect(loaded.adGame.checkpoint).toBe("village");
+    expect(loaded.adGame.level).toBe(4);
+  });
 });

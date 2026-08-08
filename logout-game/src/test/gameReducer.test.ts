@@ -77,4 +77,17 @@ describe("game reducer", () => {
     expect(selectPageCompleted(state, "sports")).toBe(true);
     expect(selectPageCompleted(state, "ad-game")).toBe(true);
   });
+
+  it("levels the hero and buys the great sword with dungeon gold", () => {
+    const state = reduce([
+      { type: "GAIN_ADVENTURE_REWARD", exp: 30, gold: 45 },
+      { type: "BUY_GREAT_SWORD" },
+    ]);
+    expect(state.adGame.level).toBe(2);
+    expect(state.adGame.exp).toBe(0);
+    expect(state.adGame.maxHp).toBe(7);
+    expect(state.adGame.hp).toBe(7);
+    expect(state.adGame.gold).toBe(0);
+    expect(state.adGame.greatSwordPurchased).toBe(true);
+  });
 });

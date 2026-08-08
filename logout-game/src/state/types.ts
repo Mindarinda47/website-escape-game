@@ -10,7 +10,7 @@ export type LetterClueId =
 export type ItemId = "water" | "key";
 export type ItemState = "missing" | "owned" | "used";
 export type ZoomPercent = 75 | 100 | 125 | 150;
-export type Checkpoint = "start" | "light-room" | "boss" | "rescue" | "clear";
+export type Checkpoint = "village" | "world" | "dungeon" | "boss" | "secret" | "rescue" | "clear";
 
 export type GameState = {
   version: 1;
@@ -46,6 +46,12 @@ export type GameState = {
     checkpoint: Checkpoint;
     bossDefeated: boolean;
     princessRescued: boolean;
+    level: number;
+    exp: number;
+    gold: number;
+    hp: number;
+    maxHp: number;
+    greatSwordPurchased: boolean;
   };
   browser: {
     darkMode: boolean;
@@ -74,6 +80,10 @@ export type GameAction =
   | { type: "RETRY_MATCH" }
   | { type: "USE_KEY" }
   | { type: "SET_CHECKPOINT"; checkpoint: Checkpoint }
+  | { type: "GAIN_ADVENTURE_REWARD"; exp: number; gold: number }
+  | { type: "SET_ADVENTURE_HP"; hp: number }
+  | { type: "REST_ADVENTURE" }
+  | { type: "BUY_GREAT_SWORD" }
   | { type: "DEFEAT_BOSS" }
   | { type: "RESCUE_PRINCESS" }
   | { type: "REPLAY_ADVENTURE" }

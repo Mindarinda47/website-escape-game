@@ -1,7 +1,8 @@
 import { initialState } from "./initialState";
-import type { GameState } from "./types";
+import type { Checkpoint, GameState } from "./types";
 
 export const STORAGE_KEY = "logout-game-state-v1";
+const checkpoints: Checkpoint[] = ["village", "world", "dungeon", "boss", "secret", "rescue", "clear"];
 
 export function loadGameState(storage: Pick<Storage, "getItem"> = localStorage): GameState {
   try {
@@ -18,7 +19,11 @@ export function loadGameState(storage: Pick<Storage, "getItem"> = localStorage):
       shop: { ...initialState.shop, ...parsed.shop },
       news: { ...initialState.news, ...parsed.news },
       sports: { ...initialState.sports, ...parsed.sports },
-      adGame: { ...initialState.adGame, ...parsed.adGame },
+      adGame: {
+        ...initialState.adGame,
+        ...parsed.adGame,
+        checkpoint: checkpoints.includes(parsed.adGame?.checkpoint as Checkpoint) ? parsed.adGame!.checkpoint as Checkpoint : "village",
+      },
       browser: { ...initialState.browser, ...parsed.browser },
     };
   } catch {

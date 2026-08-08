@@ -21,7 +21,7 @@ export const pageTitles: Record<PageId, string> = {
   news: "새벽일보",
   shop: "GOGLE SHOP",
   sports: "하프타임 스포츠",
-  "ad-game": "빛의 모험",
+  "ad-game": "G의 전설",
 };
 
 export const pageAddresses: Record<PageId, string> = {

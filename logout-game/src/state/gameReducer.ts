@@ -103,12 +103,56 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     case "SET_CHECKPOINT":
       return { ...state, adGame: { ...state.adGame, checkpoint: action.checkpoint } };
+    case "GAIN_ADVENTURE_REWARD": {
+      let level = state.adGame.level;
+      let exp = state.adGame.exp + action.exp;
+      let maxHp = state.adGame.maxHp;
+      let leveledUp = false;
+      while (exp >= level * 30) {
+        exp -= level * 30;
+        level += 1;
+        maxHp += 1;
+        leveledUp = true;
+      }
+      return {
+        ...state,
+        adGame: {
+          ...state.adGame,
+          level,
+          exp,
+          gold: state.adGame.gold + action.gold,
+          maxHp,
+          hp: leveledUp ? maxHp : state.adGame.hp,
+        },
+      };
+    }
+    case "SET_ADVENTURE_HP":
+      return { ...state, adGame: { ...state.adGame, hp: Math.max(0, Math.min(state.adGame.maxHp, action.hp)) } };
+    case "REST_ADVENTURE":
+      return { ...state, adGame: { ...state.adGame, hp: state.adGame.maxHp } };
+    case "BUY_GREAT_SWORD":
+      if (state.adGame.greatSwordPurchased || state.adGame.gold < 45) return state;
+      return { ...state, adGame: { ...state.adGame, gold: state.adGame.gold - 45, greatSwordPurchased: true } };
     case "DEFEAT_BOSS":
       return { ...state, adGame: { ...state.adGame, bossDefeated: true, checkpoint: "rescue" } };
     case "RESCUE_PRINCESS":
       return { ...state, adGame: { ...state.adGame, princessRescued: true, checkpoint: "clear" } };
     case "REPLAY_ADVENTURE":
-      return { ...state, adGame: { ...state.adGame, checkpoint: "start" } };
+      return {
+        ...state,
+        adGame: {
+          ...state.adGame,
+          checkpoint: "village",
+          bossDefeated: false,
+          princessRescued: false,
+          level: 1,
+          exp: 0,
+          gold: 0,
+          hp: 6,
+          maxHp: 6,
+          greatSwordPurchased: false,
+        },
+      };
     case "MARK_ENDING_SEEN":
       return { ...state, endingSeen: true };
     case "RESET_GAME":
