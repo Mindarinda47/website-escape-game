@@ -7,7 +7,7 @@ const pageIndex: Record<PageId, string[]> = {
   news: ["오늘", "산림", "불길", "새벽", "관련 기사", "기록"],
   shop: ["마지막", "마지막", "last", "생수", "카드", "무료 샘플", "재고"],
   sports: ["오늘", "예측", "홈", "무승부", "원정", "경기"],
-  "ad-game": ["coin", "adventure", "조작법", "빛", "구출"],
+  "ad-game": ["key", "adventure", "조작법", "빛", "열쇠", "구출"],
 };
 
 type Props = { page: PageId; onClose: () => void };

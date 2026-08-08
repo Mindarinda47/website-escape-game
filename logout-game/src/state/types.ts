@@ -7,7 +7,7 @@ export type LetterClueId =
   | "sports-o"
   | "game-g"
   | "game-u";
-export type ItemId = "water" | "coin";
+export type ItemId = "water" | "banknote" | "key";
 export type ItemState = "missing" | "owned" | "used";
 export type ZoomPercent = 75 | 100 | 125 | 150;
 export type Checkpoint = "start" | "light-room" | "boss" | "rescue" | "clear";
@@ -21,7 +21,8 @@ export type GameState = {
   collectedLetters: Record<LetterClueId, boolean>;
   inventory: {
     water: ItemState;
-    coin: ItemState;
+    banknote: ItemState;
+    key: ItemState;
     selectedItem: ItemId | null;
   };
   shop: {
@@ -34,11 +35,12 @@ export type GameState = {
     prediction: "home" | "draw" | "away" | null;
     simulationCompleted: boolean;
     predictionWasCorrect: boolean | null;
-    coinGranted: boolean;
+    rewardGranted: boolean;
+    attempts: number;
     specialAddressUnlocked: boolean;
   };
   adGame: {
-    coinInserted: boolean;
+    keyUsed: boolean;
     checkpoint: Checkpoint;
     bossDefeated: boolean;
     princessRescued: boolean;
@@ -60,13 +62,15 @@ export type GameAction =
   | { type: "SET_INVENTORY_PINNED"; value: boolean }
   | { type: "SELECT_ITEM"; item: ItemId | null }
   | { type: "COLLECT_WATER" }
+  | { type: "BUY_KEY" }
   | { type: "OPEN_CARD_DETAIL" }
   | { type: "REVEAL_HIDDEN_STOCK" }
   | { type: "COLLECT_LETTER"; clue: LetterClueId }
   | { type: "EXTINGUISH_FIRE" }
   | { type: "START_MATCH"; prediction: "home" | "draw" | "away" }
   | { type: "FINISH_MATCH" }
-  | { type: "INSERT_COIN" }
+  | { type: "RETRY_MATCH" }
+  | { type: "USE_KEY" }
   | { type: "SET_CHECKPOINT"; checkpoint: Checkpoint }
   | { type: "DEFEAT_BOSS" }
   | { type: "RESCUE_PRINCESS" }

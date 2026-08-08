@@ -29,6 +29,9 @@ describe("game reducer", () => {
       { type: "COLLECT_WATER" },
       { type: "COLLECT_LETTER", clue: "shop-t" },
       { type: "COLLECT_LETTER", clue: "shop-l" },
+      { type: "START_MATCH", prediction: "home" },
+      { type: "FINISH_MATCH" },
+      { type: "BUY_KEY" },
       { type: "NAVIGATE", page: "news" },
       { type: "SELECT_ITEM", item: "water" },
       { type: "EXTINGUISH_FIRE" },
@@ -39,20 +42,34 @@ describe("game reducer", () => {
     expect(state.inventory.water).toBe("used");
   });
 
-  it("grants a coin for a wrong prediction and completes the game branch", () => {
-    const state = reduce([
+  it("only grants the banknote for a correct retry and uses it to buy the game key", () => {
+    const failedState = reduce([
       { type: "START_MATCH", prediction: "away" },
       { type: "FINISH_MATCH" },
+    ]);
+    expect(failedState.sports.predictionWasCorrect).toBe(false);
+    expect(failedState.sports.rewardGranted).toBe(false);
+    expect(failedState.sports.attempts).toBe(1);
+    expect(failedState.inventory.banknote).toBe("missing");
+
+    const state = reduce([
+      { type: "RETRY_MATCH" },
+      { type: "START_MATCH", prediction: "home" },
+      { type: "FINISH_MATCH" },
       { type: "COLLECT_LETTER", clue: "sports-o" },
-      { type: "SELECT_ITEM", item: "coin" },
-      { type: "INSERT_COIN" },
+      { type: "BUY_KEY" },
+      { type: "SELECT_ITEM", item: "key" },
+      { type: "USE_KEY" },
       { type: "COLLECT_LETTER", clue: "game-u" },
       { type: "DEFEAT_BOSS" },
       { type: "COLLECT_LETTER", clue: "game-g" },
       { type: "RESCUE_PRINCESS" },
-    ]);
-    expect(state.sports.predictionWasCorrect).toBe(false);
-    expect(state.sports.coinGranted).toBe(true);
+    ], failedState);
+    expect(state.sports.predictionWasCorrect).toBe(true);
+    expect(state.sports.rewardGranted).toBe(true);
+    expect(state.sports.attempts).toBe(2);
+    expect(state.inventory.banknote).toBe("used");
+    expect(state.inventory.key).toBe("used");
     expect(selectPageCompleted(state, "sports")).toBe(true);
     expect(selectPageCompleted(state, "ad-game")).toBe(true);
   });

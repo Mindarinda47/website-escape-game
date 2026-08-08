@@ -19,12 +19,13 @@ const newsBriefs = [
   { category: "사회", title: "취업 준비 길어지는 대한민국 청년들… 첫 경력의 문턱도 높아졌다", time: "18분 전", image: youthEmploymentImage },
   { category: "문화", title: "밤의 도서관에서 시작된 조용한 전시", time: "32분 전", image: libraryExhibitionImage },
   { category: "생활", title: "창가에 두기 좋은 작은 식물 다섯 가지", time: "1시간 전", image: windowPlantsImage },
-  { category: "지역", title: "동네 서점에서 다시 시작된 아침 독서 모임", time: "2시간 전", image: booksAndSentencesImage },
+  { category: "경제", title: "치솟는 임대료에 골목 상점 폐업 늘어… 빈 점포 확산", time: "2시간 전" },
 ];
 
 const trending = ["유감산 산불", "산불", "코스피", "칠성전자", "항공권", "날씨", "폭염", "화재", "워터파크", "게임"];
-const trendDirections = trending.map(() => {
+const trendDirections = trending.map((_, index) => {
   const direction = Math.random();
+  if (index === 0) return direction < 0.5 ? "―" : "↑";
   if (direction < 1 / 3) return "―";
   return direction < 2 / 3 ? "↑" : "↓";
 });

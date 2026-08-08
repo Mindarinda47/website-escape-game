@@ -34,13 +34,13 @@ export const pageAddresses: Record<PageId, string> = {
 
 export function selectPageCompleted(state: GameState, page: ContentPageId): boolean {
   if (page === "shop") {
-    return state.inventory.water !== "missing" && state.collectedLetters["shop-t"] && state.collectedLetters["shop-l"];
+    return state.inventory.water !== "missing" && state.inventory.key !== "missing" && state.collectedLetters["shop-t"] && state.collectedLetters["shop-l"];
   }
   if (page === "news") return state.news.fireExtinguished && state.collectedLetters["news-o"];
   if (page === "sports") {
-    return state.sports.simulationCompleted && state.sports.coinGranted && state.collectedLetters["sports-o"];
+    return state.sports.simulationCompleted && state.sports.rewardGranted && state.collectedLetters["sports-o"];
   }
-  return state.adGame.coinInserted && state.adGame.bossDefeated && state.adGame.princessRescued && state.collectedLetters["game-g"] && state.collectedLetters["game-u"];
+  return state.adGame.keyUsed && state.adGame.bossDefeated && state.adGame.princessRescued && state.collectedLetters["game-g"] && state.collectedLetters["game-u"];
 }
 
 export function selectPageProgress(state: GameState, page: ContentPageId): [number, number] {

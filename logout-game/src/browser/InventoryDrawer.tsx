@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useGameState } from "../state/GameStateContext";
 import { letterValues, selectCollectedLetters } from "../state/selectors";
 import type { ItemId } from "../state/types";
+import waterItemIcon from "../image/products/생수아이콘.png";
 
 export function InventoryDrawer() {
   const { state, dispatch } = useGameState();
@@ -33,12 +34,17 @@ export function InventoryDrawer() {
           <div className="item-slots">
             {state.inventory.water === "missing" ? <div className="empty-item-slot" aria-label="빈 아이템 슬롯" /> : (
               <button className={state.inventory.selectedItem === "water" ? "selected" : ""} disabled={state.inventory.water === "used"} onClick={() => select("water")}>
-                <span className="item-icon water-icon">◒</span><b>생수</b><small>{state.inventory.water === "used" ? "사용됨" : "보관 중"}</small>
+                <span className="item-icon water-icon"><img src={waterItemIcon} alt="" /></span><b>생수</b><small>{state.inventory.water === "used" ? "사용됨" : "보관 중"}</small>
               </button>
             )}
-            {state.inventory.coin === "missing" ? <div className="empty-item-slot" aria-label="빈 아이템 슬롯" /> : (
-              <button className={state.inventory.selectedItem === "coin" ? "selected" : ""} disabled={state.inventory.coin === "used"} onClick={() => select("coin")}>
-                <span className="item-icon coin-icon">◎</span><b>게임 코인</b><small>{state.inventory.coin === "used" ? "사용됨" : "보관 중"}</small>
+            {state.inventory.banknote === "missing" ? <div className="empty-item-slot" aria-label="빈 아이템 슬롯" /> : (
+              <button className={state.inventory.selectedItem === "banknote" ? "selected" : ""} disabled={state.inventory.banknote === "used"} onClick={() => select("banknote")}>
+                <span className="item-icon banknote-icon">₩</span><b>5만원권</b><small>{state.inventory.banknote === "used" ? "사용됨" : "보관 중"}</small>
+              </button>
+            )}
+            {state.inventory.key === "missing" ? <div className="empty-item-slot" aria-label="빈 아이템 슬롯" /> : (
+              <button className={state.inventory.selectedItem === "key" ? "selected" : ""} disabled={state.inventory.key === "used"} onClick={() => select("key")}>
+                <span className="item-icon key-icon">⚿</span><b>고대 열쇠</b><small>{state.inventory.key === "used" ? "사용됨" : "보관 중"}</small>
               </button>
             )}
           </div>

@@ -35,6 +35,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "COLLECT_WATER":
       if (state.inventory.water !== "missing") return state;
       return { ...state, inventory: { ...state.inventory, water: "owned" }, shop: { ...state.shop, waterCollected: true } };
+    case "BUY_KEY":
+      if (state.inventory.banknote !== "owned" || state.inventory.key !== "missing") return state;
+      return {
+        ...state,
+        inventory: { ...state.inventory, banknote: "used", key: "owned", selectedItem: null },
+      };
     case "OPEN_CARD_DETAIL":
       return { ...state, shop: { ...state.shop, cardDetailOpened: true } };
     case "REVEAL_HIDDEN_STOCK":
@@ -56,23 +62,40 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     case "FINISH_MATCH":
       if (!state.sports.prediction) return state;
+      {
+        const predictionWasCorrect = state.sports.prediction === "home";
+        return {
+          ...state,
+          inventory: {
+            ...state.inventory,
+            banknote: predictionWasCorrect && state.inventory.banknote === "missing" ? "owned" : state.inventory.banknote,
+          },
+          sports: {
+            ...state.sports,
+            simulationCompleted: true,
+            predictionWasCorrect,
+            rewardGranted: state.sports.rewardGranted || predictionWasCorrect,
+            specialAddressUnlocked: state.sports.specialAddressUnlocked || predictionWasCorrect,
+            attempts: state.sports.attempts + 1,
+          },
+        };
+      }
+    case "RETRY_MATCH":
       return {
         ...state,
-        inventory: { ...state.inventory, coin: state.inventory.coin === "missing" ? "owned" : state.inventory.coin },
         sports: {
           ...state.sports,
-          simulationCompleted: true,
-          predictionWasCorrect: state.sports.prediction === "home",
-          coinGranted: true,
-          specialAddressUnlocked: true,
+          prediction: null,
+          simulationCompleted: false,
+          predictionWasCorrect: null,
         },
       };
-    case "INSERT_COIN":
-      if (state.inventory.coin !== "owned") return state;
+    case "USE_KEY":
+      if (state.inventory.key !== "owned") return state;
       return {
         ...state,
-        inventory: { ...state.inventory, coin: "used", selectedItem: null },
-        adGame: { ...state.adGame, coinInserted: true },
+        inventory: { ...state.inventory, key: "used", selectedItem: null },
+        adGame: { ...state.adGame, keyUsed: true },
       };
     case "SET_CHECKPOINT":
       return { ...state, adGame: { ...state.adGame, checkpoint: action.checkpoint } };

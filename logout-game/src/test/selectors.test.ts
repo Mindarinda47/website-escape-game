@@ -19,11 +19,11 @@ describe("derived page completion", () => {
   it("requires each page's concrete progress flags", () => {
     const completed = {
       ...initialState,
-      inventory: { ...initialState.inventory, water: "used" as const, coin: "used" as const },
+      inventory: { ...initialState.inventory, water: "used" as const, banknote: "used" as const, key: "used" as const },
       collectedLetters: Object.fromEntries(Object.keys(initialState.collectedLetters).map((clue) => [clue, true])) as typeof initialState.collectedLetters,
       news: { fireExtinguished: true },
-      sports: { ...initialState.sports, simulationCompleted: true, coinGranted: true },
-      adGame: { ...initialState.adGame, coinInserted: true, bossDefeated: true, princessRescued: true },
+      sports: { ...initialState.sports, simulationCompleted: true, predictionWasCorrect: true, rewardGranted: true },
+      adGame: { ...initialState.adGame, keyUsed: true, bossDefeated: true, princessRescued: true },
     };
     expect(selectPageCompleted(completed, "shop")).toBe(true);
     expect(selectPageCompleted(completed, "news")).toBe(true);
