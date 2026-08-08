@@ -6,13 +6,20 @@ import wildfireImage from "../image/산불.png";
 import extinguishedWildfireImage from "../image/산불_꺼진상태.png";
 import shopThumbnailImage from "../image/쇼핑몰썸네일.png";
 import youthEmploymentImage from "../image/청년_취업난.png";
+import libraryExhibitionImage from "../image/밤의도서관전시.png";
+import windowPlantsImage from "../image/창가식물.png";
+import booksAndSentencesImage from "../image/책과문장.png";
+import morningRoomImage from "../image/아침빛이오래머무는방.png";
+import gangrimFcImage from "../image/강림FC.png";
+import dorimFcImage from "../image/도림FC.png";
 
 type Props = { onEndingAnswer: () => void };
 
 const newsBriefs = [
   { category: "사회", title: "취업 준비 길어지는 대한민국 청년들… 첫 경력의 문턱도 높아졌다", time: "18분 전", image: youthEmploymentImage },
-  { category: "문화", title: "밤의 도서관에서 시작된 조용한 전시", time: "32분 전" },
-  { category: "생활", title: "창가에 두기 좋은 작은 식물 다섯 가지", time: "1시간 전" },
+  { category: "문화", title: "밤의 도서관에서 시작된 조용한 전시", time: "32분 전", image: libraryExhibitionImage },
+  { category: "생활", title: "창가에 두기 좋은 작은 식물 다섯 가지", time: "1시간 전", image: windowPlantsImage },
+  { category: "지역", title: "동네 서점에서 다시 시작된 아침 독서 모임", time: "2시간 전", image: booksAndSentencesImage },
 ];
 
 const trending = ["유감산 산불", "산불", "코스피", "칠성전자", "항공권", "날씨", "폭염", "화재", "워터파크", "게임"];
@@ -41,7 +48,7 @@ export function PortalPage({ onEndingAnswer }: Props) {
     const routes: Array<[string[], PageId]> = [
       [["뉴스", "기사", "news", "산불", "유감산"], "news"],
       [["쇼핑", "상점", "shop", "상품", "무료 샘플"], "shop"],
-      [["스포츠", "축구", "경기", "sports", "노을시티"], "sports"],
+      [["스포츠", "축구", "경기", "sports", "강림FC", "도림FC"], "sports"],
       [["게임", "모험", "game"], "ad-game"],
     ];
     const route = routes.find(([keywords]) => keywords.some((keyword) => value.includes(keyword)));
@@ -98,10 +105,9 @@ export function PortalPage({ onEndingAnswer }: Props) {
               <div className="life-grid">
                 <button className={`shop-feature portal-destination ${shopCompleted ? "completed" : ""}`} onClick={() => open("shop")}>
                   <span className="shop-feature-art" aria-hidden="true"><img src={shopThumbnailImage} alt="" /></span>
-                  <span><small>GOGLE SHOP</small><strong>오늘 도착한 물건들</strong><span>새로 들어온 상품과 오래 머문 물건들을 소개합니다.</span></span>
                 </button>
-                <article className="static-life-card"><span className="static-art reading-art">▤</span><small>책과 문장</small><h3>다음 장을 천천히 여는 방법</h3><p>오늘의 짧은 읽을거리 · 4분</p></article>
-                <article className="static-life-card"><span className="static-art room-art">⌂</span><small>공간</small><h3>아침빛이 오래 머무는 방</h3><p>작은 집 기록 · 사진 8장</p></article>
+                <article className="static-life-card"><span className="static-art reading-art"><img src={booksAndSentencesImage} alt="" /></span><small>책과 문장</small><h3>다음 장을 천천히 여는 방법</h3><p>오늘의 짧은 읽을거리 · 4분</p></article>
+                <article className="static-life-card"><span className="static-art room-art"><img src={morningRoomImage} alt="" /></span><small>공간</small><h3>아침빛이 오래 머무는 방</h3><p>작은 집 기록 · 사진 8장</p></article>
               </div>
             </section>
 
@@ -109,9 +115,9 @@ export function PortalPage({ onEndingAnswer }: Props) {
               <div className="section-heading"><div><span>SPORTS</span><h2 id="portal-sports-title">스포츠</h2></div><p>오늘의 경기와 일정</p></div>
               <div className="sports-grid">
                 <button className={`sports-feature portal-destination ${sportsCompleted ? "completed" : ""}`} onClick={() => open("sports")}>
-                  <span className="match-date">12라운드 · 오늘</span><span className="mini-match"><i className="mini-crest warm">N</i><b>노을시티</b><em>VS</em><b>새벽항구</b><i className="mini-crest cool">D</i></span><span className="match-caption">경기 전 승부 예측이 진행 중입니다</span>
+                  <span className="match-date">12라운드 · 오늘</span><span className="mini-match"><span className="mini-crest warm"><img src={gangrimFcImage} alt="" /></span><b>강림FC</b><em>VS</em><b>도림FC</b><span className="mini-crest cool"><img src={dorimFcImage} alt="" /></span></span><span className="match-caption">경기 전 승부 예측이 진행 중입니다</span>
                 </button>
-                <div className="schedule-card"><h3>오늘의 경기</h3><div><time>17:30</time><span>북쪽역 FC</span><b>-</b><span>해안선 유나이티드</span></div><div><time>20:00</time><span>노을시티</span><b>-</b><span>새벽항구</span></div><div><time>22:10</time><span>구름산 로버스</span><b>-</b><span>광장 애슬레틱</span></div></div>
+                <div className="schedule-card"><h3>오늘의 경기</h3><div><time>17:30</time><span>한빛 FC</span><b>-</b><span>화진 유나이티드</span></div><div><time>20:00</time><span>강림FC</span><b>-</b><span>도림FC</span></div><div><time>22:10</time><span>가온 시티</span><b>-</b><span>태령 FC</span></div></div>
               </div>
             </section>
           </div>
