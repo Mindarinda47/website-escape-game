@@ -182,6 +182,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .rpg-dialogue::before { position:absolute;top:7px;bottom:7px;left:6px;width:3px;background:#d8b567;content:""; }
 .rpg-dialogue span { color:#e4bd66;font:800 .68em monospace;letter-spacing:.08em; }
 .rpg-dialogue p { margin:.24em 0 0;font:700 .74em/1.45 monospace; }
+.legendary-g-reward { display:block;width:9.5em;height:9.5em;margin:0 auto 1.3em;object-fit:contain;filter:drop-shadow(0 0 24px rgba(255,202,79,.42)); }
+.adventure-clear .portal-return-button { border-color:#cba85e;color:#fff0c6;background:#3b3446; }
+.adventure-clear .portal-return-button:hover { color:#fff8df;background:#51465c; }
+.confirm-modal.ending-confirm { border-color:#5f766e;color:#f1f6f3;background:#17211e;box-shadow:0 28px 90px rgba(0,0,0,.62); }
+.confirm-modal.ending-confirm h2 { color:#fff; }
+.confirm-modal.ending-confirm p { color:#cbd7d2; }
+.ending-confirm .button.ghost { border-color:#82958e;color:#f2f7f5;background:#293632; }
+.ending-confirm .button.ghost:hover { background:#35443f; }
 .game-app:fullscreen { width:100vw;height:100vh;background:var(--bg); }
 .game-app:fullscreen .browser-window { width:100vw;height:100vh;max-width:none;border:0;border-radius:0; }
 .game-app:fullscreen .page-viewport { height:calc(100vh - 94px); }

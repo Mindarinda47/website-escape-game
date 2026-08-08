@@ -6,6 +6,7 @@ export const CANVAS_HEIGHT = 480;
 export const PLAYER_MOVE_SPEED = 180;
 export const RUN_SPEED_MULTIPLIER = 1.65;
 export const BOSS_FIRE_CHARGE_DURATION = 2;
+export const BOSS_FIRE_AIM_LOCK_DURATION = 0.45;
 export const BOSS_FIRE_DURATION = 3;
 export const BOSS_FIRE_LENGTH = 520;
 export const BOSS_FIRE_WIDTH = 56;
@@ -157,7 +158,9 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
   }
 
   if (enemyActor.specialPhase === "charging") {
-    enemyActor.specialAngle = Math.atan2(runtime.player.y - enemyActor.y, runtime.player.x - enemyActor.x);
+    if (enemyActor.specialTimer > BOSS_FIRE_AIM_LOCK_DURATION) {
+      enemyActor.specialAngle = Math.atan2(runtime.player.y - enemyActor.y, runtime.player.x - enemyActor.x);
+    }
     enemyActor.specialTimer -= delta;
     if (enemyActor.specialTimer <= 0) {
       enemyActor.specialPhase = "breathing";

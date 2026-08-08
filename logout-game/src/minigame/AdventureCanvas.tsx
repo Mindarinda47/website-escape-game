@@ -4,6 +4,7 @@ import heroSpriteSource from "../image/game/hero-sprites.png";
 import princessSpriteSource from "../image/game/princess-left.png";
 import dragonBossSpriteSource from "../image/dragon-boss-front-sprite-768.png";
 import rangedSkullSpriteSource from "../image/purple-flame-skull-sprite-128.png";
+import harpSpriteSource from "../image/u-shaped-harp-clue-sprite.png";
 import meleeBatSpriteSource from "../image/vampire-bat-sprite-128.png";
 import { useGameState } from "../state/GameStateContext";
 import {
@@ -31,7 +32,6 @@ const BLACKSMITH = { x: 905, y: 410 };
 const VILLAGE_WELL = { x: 520, y: 500 };
 const SECRET_ALTAR = { x: 1060, y: 450 };
 const PRINCESS = { x: 700, y: 330 };
-const G_SHIELD = { x: 630, y: 342 };
 
 type SpriteSet = {
   hero: HTMLImageElement | null;
@@ -40,12 +40,13 @@ type SpriteSet = {
   melee: HTMLImageElement | null;
   ranged: HTMLImageElement | null;
   boss: HTMLImageElement | null;
+  harp: HTMLImageElement | null;
 };
 
 export function AdventureCanvas() {
   const { state, dispatch, notify } = useGameState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const spritesRef = useRef<SpriteSet>({ hero: null, blacksmith: null, princess: null, melee: null, ranged: null, boss: null });
+  const spritesRef = useRef<SpriteSet>({ hero: null, blacksmith: null, princess: null, melee: null, ranged: null, boss: null, harp: null });
   const stateRef = useRef(state);
   const notifyRef = useRef(notify);
   const pendingSpawnRef = useRef<Vec2 | null>(null);
@@ -56,6 +57,7 @@ export function AdventureCanvas() {
   const interactHeldRef = useRef(false);
   const transitionLockedRef = useRef(false);
   const runningRef = useRef(false);
+  const princessDialogueRef = useRef(0);
   const [paused, setPaused] = useState(false);
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState(sceneCopy[state.adGame.checkpoint].objective);
@@ -77,6 +79,7 @@ export function AdventureCanvas() {
     load("melee", meleeBatSpriteSource);
     load("ranged", rangedSkullSpriteSource);
     load("boss", dragonBossSpriteSource);
+    load("harp", harpSpriteSource);
   }, []);
 
   useEffect(() => {
@@ -84,6 +87,7 @@ export function AdventureCanvas() {
     runtimeRef.current = createRuntime(state.adGame.checkpoint, progress.hp, progress.maxHp, pendingSpawnRef.current ?? scenes[state.adGame.checkpoint].spawn);
     pendingSpawnRef.current = null;
     transitionLockedRef.current = false;
+    princessDialogueRef.current = 0;
     setStatus(sceneCopy[state.adGame.checkpoint].objective);
   }, [state.adGame.checkpoint]);
 
@@ -183,15 +187,25 @@ export function AdventureCanvas() {
       if (runtime.scene === "secret" && distance(runtime.player, SECRET_ALTAR) < 78) {
         if (!stateRef.current.collectedLetters["game-u"]) {
           dispatch({ type: "COLLECT_LETTER", clue: "game-u" });
-          notifyRef.current("문자 단서 U를 획득했습니다.");
+          notifyRef.current("고귀한 유의 하프를 획득했습니다.");
         }
-        setStatus("오래된 숲의 제단은 다시 조용해졌다.");
+        setStatus("고귀한 유의 하프가 맑은 음을 남기고 단서가 되었다.");
         return;
       }
       if (runtime.scene === "rescue" && distance(runtime.player, PRINCESS) < 90) {
+        if (princessDialogueRef.current === 0) {
+          princessDialogueRef.current = 1;
+          setStatus("공주: 저를 구해 주셔서 정말 고마워요, 용사님.");
+          return;
+        }
+        if (princessDialogueRef.current === 1) {
+          princessDialogueRef.current = 2;
+          setStatus("공주: 감사의 뜻으로 왕가에 대대로 내려오는 전설의 G를 드리겠습니다.");
+          return;
+        }
         if (!stateRef.current.collectedLetters["game-g"]) {
           dispatch({ type: "COLLECT_LETTER", clue: "game-g" });
-          notifyRef.current("문자 단서 G를 획득했습니다.");
+          notifyRef.current("전설의 G를 획득했습니다.");
         }
         dispatch({ type: "RESCUE_PRINCESS" });
       }
@@ -395,7 +409,7 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
   }
   if (runtime.scene === "secret" && !hasU) {
     context.fillStyle = "rgba(182,246,207,.16)"; context.beginPath(); context.arc(SECRET_ALTAR.x, SECRET_ALTAR.y, 66, 0, Math.PI * 2); context.fill();
-    context.fillStyle = "#d7ffd9"; context.font = "bold 54px Georgia"; context.textAlign = "center"; context.fillText("U", SECRET_ALTAR.x, SECRET_ALTAR.y + 18); context.textAlign = "start";
+    if (sprites.harp?.complete) context.drawImage(sprites.harp, SECRET_ALTAR.x - 58, SECRET_ALTAR.y - 73, 116, 116);
   }
   if (runtime.scene === "boss") {
     context.fillStyle = "#1c1721"; context.fillRect(555, 82, 190, 72);
@@ -403,7 +417,6 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
   }
   if (runtime.scene === "rescue") {
     context.fillStyle = "rgba(255,225,158,.13)"; context.beginPath(); context.arc(PRINCESS.x, PRINCESS.y, 95, 0, Math.PI * 2); context.fill();
-    drawShield(context, G_SHIELD.x, G_SHIELD.y, 0.72);
     drawSpriteNpc(context, sprites.princess, PRINCESS, 88);
   }
 }
@@ -620,11 +633,4 @@ function drawCastleGate(context: CanvasRenderingContext2D, point: Vec2) {
   context.fillStyle = "#2c2330"; context.fillRect(point.x - 42, point.y + 8, 84, 72);
   context.fillStyle = "#8d7390"; for (let x = point.x - 86; x < point.x + 86; x += 30) context.fillRect(x, point.y - 48, 22, 18);
   context.fillStyle = "#ead5a0"; context.font = "bold 13px monospace"; context.textAlign = "center"; context.fillText("검은 성", point.x, point.y - 5); context.textAlign = "start";
-}
-
-function drawShield(context: CanvasRenderingContext2D, x: number, y: number, scale = 1) {
-  context.save(); context.translate(x, y); context.scale(scale, scale);
-  context.fillStyle = "#e6bd56"; context.beginPath(); context.moveTo(0, -42); context.lineTo(35, -25); context.lineTo(27, 25); context.lineTo(0, 48); context.lineTo(-27, 25); context.lineTo(-35, -25); context.closePath(); context.fill();
-  context.strokeStyle = "#fff0a5"; context.lineWidth = 5; context.stroke();
-  context.fillStyle = "#694d22"; context.font = "bold 38px Georgia"; context.textAlign = "center"; context.fillText("G", 0, 13); context.restore(); context.textAlign = "start";
 }

@@ -70,9 +70,18 @@ describe("G의 전설 엔진", () => {
     expect(boss.specialPhase).toBe("charging");
     expect(boss.specialTimer).toBe(2);
 
-    updateEnemies(runtime, 2.05, []);
+    boss.specialTimer = 0.4;
+    boss.specialAngle = 0;
+    runtime.player.x = 650;
+    runtime.player.y = 500;
+    updateEnemies(runtime, 0.1, []);
+    expect(boss.specialAngle).toBe(0);
+
+    updateEnemies(runtime, 0.31, []);
     expect(boss.specialPhase).toBe("breathing");
     expect(boss.specialTimer).toBe(3);
+    runtime.player.x = 900;
+    runtime.player.y = 230;
     runtime.elapsed = 1;
     expect(damagePlayerIfHit(runtime)).toBe(true);
     expect(runtime.player.hp).toBe(5);

@@ -174,7 +174,7 @@ export const scenes: Record<Checkpoint, SceneDefinition> = {
   },
   clear: {
     title: "모험 완료",
-    objective: "G의 방패가 밝게 빛나며 단서가 되었다.",
+    objective: "전설의 G를 획득했다!",
     ground: "rescue",
     width: 1000,
     height: 700,

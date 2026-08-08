@@ -1,5 +1,6 @@
 import { AdventureCanvas } from "../minigame/AdventureCanvas";
 import { useGameState } from "../state/GameStateContext";
+import legendaryGImage from "../image/legendary-g-sprite-512.png";
 export function AdGamePage() {
   const { state, dispatch, notify } = useGameState();
 
@@ -24,7 +25,7 @@ export function AdGamePage() {
           <button className={`key-slot ${state.inventory.selectedItem === "key" ? "item-target" : ""}`} onClick={useKey}><span>⚿</span><b>KEY</b><small>{state.inventory.key === "missing" ? "LOCKED" : state.inventory.selectedItem === "key" ? "UNLOCK" : "···"}</small></button>
         </section>
       ) : state.adGame.checkpoint === "clear" ? (
-        <section className="adventure-clear"><div className="shield-reward" aria-hidden="true"><span>G</span></div><span className="pixel-label">QUEST COMPLETE</span><h2>G의 전설</h2><p>공주는 구출되었고, G의 방패는 화면을 건너 당신의 단서가 되었습니다.</p><div className="modal-actions"><button className="button primary" onClick={() => dispatch({ type: "REPLAY_ADVENTURE" })}>REPLAY</button><button className="button ghost" onClick={() => dispatch({ type: "NAVIGATE", page: "portal" })}>포털로 돌아가기</button></div></section>
+        <section className="adventure-clear"><img className="legendary-g-reward" src={legendaryGImage} alt="왕가에 전해 내려오는 전설의 G" /><span className="pixel-label">QUEST COMPLETE</span><h2>전설의 G를 획득했다!</h2><p>공주를 구출하고 왕가의 보물을 새로운 단서로 손에 넣었습니다.</p><div className="modal-actions"><button className="button primary" onClick={() => dispatch({ type: "REPLAY_ADVENTURE" })}>REPLAY</button><button className="button ghost portal-return-button" onClick={() => dispatch({ type: "NAVIGATE", page: "portal" })}>포털로 돌아가기</button></div></section>
       ) : <AdventureCanvas />}
     </main>
   );
