@@ -30,7 +30,7 @@ describe("game reducer", () => {
       { type: "COLLECT_LETTER", clue: "shop-t" },
       { type: "COLLECT_LETTER", clue: "shop-l" },
       { type: "START_MATCH", prediction: "home" },
-      { type: "FINISH_MATCH" },
+      { type: "FINISH_MATCH", outcome: "home", homeScore: 2, awayScore: 1 },
       { type: "BUY_KEY" },
       { type: "NAVIGATE", page: "news" },
       { type: "SELECT_ITEM", item: "water" },
@@ -45,7 +45,7 @@ describe("game reducer", () => {
   it("only grants points for a correct retry and spends them on the game key", () => {
     const failedState = reduce([
       { type: "START_MATCH", prediction: "away" },
-      { type: "FINISH_MATCH" },
+      { type: "FINISH_MATCH", outcome: "home", homeScore: 2, awayScore: 1 },
     ]);
     expect(failedState.sports.predictionWasCorrect).toBe(false);
     expect(failedState.sports.rewardGranted).toBe(false);
@@ -55,7 +55,7 @@ describe("game reducer", () => {
     const rewardedState = reduce([
       { type: "RETRY_MATCH" },
       { type: "START_MATCH", prediction: "home" },
-      { type: "FINISH_MATCH" },
+      { type: "FINISH_MATCH", outcome: "home", homeScore: 2, awayScore: 1 },
       { type: "COLLECT_LETTER", clue: "sports-o" },
     ], failedState);
     expect(rewardedState.inventory.points).toBe(50000);

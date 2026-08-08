@@ -23,6 +23,8 @@ export const initialState: GameState = {
     predictionWasCorrect: null,
     rewardGranted: false,
     attempts: 0,
+    homeScore: 0,
+    awayScore: 0,
     specialAddressUnlocked: false,
   },
   adGame: {

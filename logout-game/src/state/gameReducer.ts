@@ -58,12 +58,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "START_MATCH":
       return {
         ...state,
-        sports: { ...state.sports, prediction: action.prediction, simulationCompleted: false, predictionWasCorrect: null },
+        sports: { ...state.sports, prediction: action.prediction, simulationCompleted: false, predictionWasCorrect: null, homeScore: 0, awayScore: 0 },
       };
     case "FINISH_MATCH":
       if (!state.sports.prediction) return state;
       {
-        const predictionWasCorrect = state.sports.prediction === "home";
+        const predictionWasCorrect = state.sports.prediction === action.outcome;
         return {
           ...state,
           inventory: {
@@ -77,6 +77,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             rewardGranted: state.sports.rewardGranted || predictionWasCorrect,
             specialAddressUnlocked: state.sports.specialAddressUnlocked || predictionWasCorrect,
             attempts: state.sports.attempts + 1,
+            homeScore: action.homeScore,
+            awayScore: action.awayScore,
           },
         };
       }
@@ -88,6 +90,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           prediction: null,
           simulationCompleted: false,
           predictionWasCorrect: null,
+          homeScore: 0,
+          awayScore: 0,
         },
       };
     case "USE_KEY":

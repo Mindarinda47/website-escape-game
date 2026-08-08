@@ -37,6 +37,8 @@ export type GameState = {
     predictionWasCorrect: boolean | null;
     rewardGranted: boolean;
     attempts: number;
+    homeScore: number;
+    awayScore: number;
     specialAddressUnlocked: boolean;
   };
   adGame: {
@@ -68,7 +70,7 @@ export type GameAction =
   | { type: "COLLECT_LETTER"; clue: LetterClueId }
   | { type: "EXTINGUISH_FIRE" }
   | { type: "START_MATCH"; prediction: "home" | "draw" | "away" }
-  | { type: "FINISH_MATCH" }
+  | { type: "FINISH_MATCH"; outcome: "home" | "draw" | "away"; homeScore: number; awayScore: number }
   | { type: "RETRY_MATCH" }
   | { type: "USE_KEY" }
   | { type: "SET_CHECKPOINT"; checkpoint: Checkpoint }
