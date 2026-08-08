@@ -14,6 +14,7 @@ type MatchSimulation = {
   players: SimPlayer[];
   commentary: string;
   kickCooldown: number;
+  restartDelay: number;
 };
 
 const MATCH_SECONDS = 36;
@@ -34,7 +35,21 @@ const formation: SimPlayer[] = [
   { id: "a-4", team: "away", x: 58, y: 62, baseX: 58, baseY: 62 },
 ];
 
-function createSimulation(): MatchSimulation {
+function createKickoffFormation(kickoffTeam: Team): SimPlayer[] {
+  const kickoffPlayerId = kickoffTeam === "home" ? "h-3" : "a-3";
+  return formation.map((player) => {
+    if (player.id === kickoffPlayerId) return { ...player, x: kickoffTeam === "home" ? 49 : 51, y: 50 };
+    const xVariation = player.goalkeeper ? (Math.random() - 0.5) * 0.8 : (Math.random() - 0.5) * 3;
+    const yVariation = (Math.random() - 0.5) * 5;
+    return {
+      ...player,
+      x: Math.max(4, Math.min(96, player.baseX + xVariation)),
+      y: Math.max(8, Math.min(92, player.baseY + yVariation)),
+    };
+  });
+}
+
+export function createSimulation(): MatchSimulation {
   return {
     elapsed: 0,
     homeScore: 0,
@@ -43,6 +58,7 @@ function createSimulation(): MatchSimulation {
     players: formation.map((player) => ({ ...player })),
     commentary: "양 팀 선수들이 각자의 위치를 잡고 있습니다.",
     kickCooldown: 0,
+    restartDelay: 0,
   };
 }
 
@@ -69,14 +85,22 @@ function nearestOpponentDistance(players: SimPlayer[], player: SimPlayer) {
   return Math.min(...players.filter((candidate) => candidate.team === opponent).map((candidate) => distance(candidate, player)));
 }
 
-function stepSimulation(current: MatchSimulation): MatchSimulation {
+export function stepSimulation(current: MatchSimulation): MatchSimulation {
   if (current.elapsed >= MATCH_SECONDS) return current;
+  if (current.restartDelay > 0) {
+    return {
+      ...current,
+      elapsed: Math.min(MATCH_SECONDS, current.elapsed + TICK_SECONDS),
+      kickCooldown: 0,
+      restartDelay: Math.max(0, current.restartDelay - TICK_SECONDS),
+    };
+  }
 
   const homeChaser = nearestPlayer(current.players, "home", current.ball, true).id;
   const awayChaser = nearestPlayer(current.players, "away", current.ball, true).id;
   const chaseX = Math.max(3, Math.min(97, current.ball.x + current.ball.vx * 1.4));
   const chaseY = Math.max(3, Math.min(97, current.ball.y + current.ball.vy * 1.4));
-  const players = current.players.map((player) => {
+  let players = current.players.map((player) => {
     if (player.goalkeeper) {
       const targetY = Math.max(34, Math.min(66, current.ball.y));
       return moveToward(player, player.baseX, targetY, 0.62);
@@ -151,8 +175,9 @@ function stepSimulation(current: MatchSimulation): MatchSimulation {
   if (ball.x >= 99) {
     if (ball.y >= 35 && ball.y <= 65) {
       homeScore += 1;
-      Object.assign(ball, { x: 50, y: 50, vx: -0.65, vy: (Math.random() - 0.5) * 0.45 });
-      kickCooldown = 0.55;
+      Object.assign(ball, { x: 50, y: 50, vx: 0, vy: 0 });
+      players = createKickoffFormation("away");
+      kickCooldown = 0;
       commentary = "강림FC의 골입니다. 도림FC가 중앙에서 경기를 재개합니다.";
     } else {
       ball.x = 98;
@@ -162,8 +187,9 @@ function stepSimulation(current: MatchSimulation): MatchSimulation {
   } else if (ball.x <= 1) {
     if (ball.y >= 35 && ball.y <= 65) {
       awayScore += 1;
-      Object.assign(ball, { x: 50, y: 50, vx: 0.65, vy: (Math.random() - 0.5) * 0.45 });
-      kickCooldown = 0.55;
+      Object.assign(ball, { x: 50, y: 50, vx: 0, vy: 0 });
+      players = createKickoffFormation("home");
+      kickCooldown = 0;
       commentary = "도림FC의 골입니다. 강림FC가 중앙에서 경기를 재개합니다.";
     } else {
       ball.x = 2;
@@ -172,7 +198,8 @@ function stepSimulation(current: MatchSimulation): MatchSimulation {
     }
   }
 
-  return { elapsed: Math.min(MATCH_SECONDS, current.elapsed + TICK_SECONDS), homeScore, awayScore, ball, players, commentary, kickCooldown };
+  const restartDelay = homeScore !== current.homeScore || awayScore !== current.awayScore ? 0.8 : 0;
+  return { elapsed: Math.min(MATCH_SECONDS, current.elapsed + TICK_SECONDS), homeScore, awayScore, ball, players, commentary, kickCooldown, restartDelay };
 }
 
 function outcomeOf(homeScore: number, awayScore: number): Prediction {
