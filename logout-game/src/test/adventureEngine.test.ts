@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRuntime, movePlayer, performAttack, RUN_SPEED_MULTIPLIER, updateEnemies } from "../minigame/engine";
+import { createRuntime, damagePlayerIfHit, movePlayer, performAttack, RUN_SPEED_MULTIPLIER, updateEnemies } from "../minigame/engine";
 
 describe("G의 전설 엔진", () => {
   it("allows only one movement axis when diagonal keys are held", () => {
@@ -59,6 +59,26 @@ describe("G의 전설 엔진", () => {
     } finally {
       random.mockRestore();
     }
+  });
+
+  it("charges for two seconds before the boss breathes fire for three seconds", () => {
+    const runtime = createRuntime("boss", 6, 6, { x: 900, y: 230 });
+    const boss = runtime.enemies[0];
+    expect(boss.maxHp).toBe(30);
+    boss.specialCooldown = 0;
+    updateEnemies(runtime, 0.1, []);
+    expect(boss.specialPhase).toBe("charging");
+    expect(boss.specialTimer).toBe(2);
+
+    updateEnemies(runtime, 2.05, []);
+    expect(boss.specialPhase).toBe("breathing");
+    expect(boss.specialTimer).toBe(3);
+    runtime.elapsed = 1;
+    expect(damagePlayerIfHit(runtime)).toBe(true);
+    expect(runtime.player.hp).toBe(5);
+
+    updateEnemies(runtime, 3.05, []);
+    expect(boss.specialPhase).toBe("idle");
   });
 
   it("moves an exit spawn away from a blocking obstacle before play resumes", () => {

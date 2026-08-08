@@ -4,6 +4,7 @@ export type Vec2 = { x: number; y: number };
 export type Rect = Vec2 & { width: number; height: number };
 export type Direction = "down" | "left" | "right" | "up";
 export type EnemyKind = "melee" | "ranged" | "boss";
+export type BossSkillPhase = "idle" | "charging" | "breathing";
 
 export type Actor = Vec2 & { radius: number; hp: number; maxHp: number };
 export type PlayerActor = Actor & { direction: Direction; moving: boolean; walkTime: number };
@@ -13,6 +14,10 @@ export type EnemyActor = Actor & {
   cooldown: number;
   patternTime: number;
   phase: number;
+  specialPhase: BossSkillPhase;
+  specialTimer: number;
+  specialCooldown: number;
+  specialAngle: number;
 };
 export type Projectile = Vec2 & { vx: number; vy: number; radius: number; life: number; hostile: boolean };
 

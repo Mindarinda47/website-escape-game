@@ -5,6 +5,10 @@ export const CANVAS_WIDTH = 768;
 export const CANVAS_HEIGHT = 480;
 export const PLAYER_MOVE_SPEED = 180;
 export const RUN_SPEED_MULTIPLIER = 1.65;
+export const BOSS_FIRE_CHARGE_DURATION = 2;
+export const BOSS_FIRE_DURATION = 3;
+export const BOSS_FIRE_LENGTH = 520;
+export const BOSS_FIRE_WIDTH = 56;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -22,8 +26,12 @@ export function directionVector(direction: Direction): Vec2 {
 }
 
 function enemy(id: string, kind: EnemyKind, x: number, y: number): EnemyActor {
-  const maxHp = kind === "boss" ? 14 : 3;
-  return { id, kind, x, y, radius: kind === "boss" ? 29 : 16, hp: maxHp, maxHp, cooldown: 0.5, patternTime: 0, phase: Math.random() * Math.PI * 2 };
+  const maxHp = kind === "boss" ? 30 : 3;
+  return {
+    id, kind, x, y, radius: kind === "boss" ? 42 : 16, hp: maxHp, maxHp, cooldown: 0.5,
+    patternTime: 0, phase: Math.random() * Math.PI * 2, specialPhase: "idle", specialTimer: 0,
+    specialCooldown: kind === "boss" ? 4 : 0, specialAngle: 0,
+  };
 }
 
 export function createEnemies(scene: AdventureRuntime["scene"]): EnemyActor[] {
@@ -148,6 +156,32 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
     return;
   }
 
+  if (enemyActor.specialPhase === "charging") {
+    enemyActor.specialAngle = Math.atan2(runtime.player.y - enemyActor.y, runtime.player.x - enemyActor.x);
+    enemyActor.specialTimer -= delta;
+    if (enemyActor.specialTimer <= 0) {
+      enemyActor.specialPhase = "breathing";
+      enemyActor.specialTimer = BOSS_FIRE_DURATION;
+    }
+    return;
+  }
+  if (enemyActor.specialPhase === "breathing") {
+    enemyActor.specialTimer -= delta;
+    if (enemyActor.specialTimer <= 0) {
+      enemyActor.specialPhase = "idle";
+      enemyActor.specialTimer = 0;
+      enemyActor.specialCooldown = 5.5;
+    }
+    return;
+  }
+  enemyActor.specialCooldown = Math.max(0, enemyActor.specialCooldown - delta);
+  if (enemyActor.specialCooldown <= 0 && gap < 650) {
+    enemyActor.specialPhase = "charging";
+    enemyActor.specialTimer = BOSS_FIRE_CHARGE_DURATION;
+    enemyActor.specialAngle = Math.atan2(dy, dx);
+    return;
+  }
+
   const cycle = enemyActor.patternTime % 7;
   if (cycle < 2.4) moveActor(enemyActor, towardX * 82 * delta, towardY * 82 * delta, obstacles, scene.width, scene.height);
   else if (cycle < 4.3) moveActor(enemyActor, -towardY * side * 62 * delta, towardX * side * 62 * delta, obstacles, scene.width, scene.height);
@@ -210,11 +244,27 @@ export function damagePlayerIfHit(runtime: AdventureRuntime): boolean {
   if (runtime.elapsed < runtime.invulnerableUntil) return false;
   const touchingEnemy = runtime.enemies.some((currentEnemy) => distance(runtime.player, currentEnemy) < runtime.player.radius + currentEnemy.radius + 2);
   const projectileIndex = runtime.projectiles.findIndex((projectile) => projectile.hostile && distance(runtime.player, projectile) < runtime.player.radius + projectile.radius);
-  if (!touchingEnemy && projectileIndex < 0) return false;
+  const touchingFire = runtime.enemies.some((currentEnemy) => currentEnemy.kind === "boss" && currentEnemy.specialPhase === "breathing" && bossFireHitsPlayer(currentEnemy, runtime.player));
+  if (!touchingEnemy && projectileIndex < 0 && !touchingFire) return false;
   if (projectileIndex >= 0) runtime.projectiles.splice(projectileIndex, 1);
   runtime.player.hp = Math.max(0, runtime.player.hp - 1);
   runtime.invulnerableUntil = runtime.elapsed + 0.9;
   return true;
+}
+
+function bossFireHitsPlayer(boss: EnemyActor, player: Actor): boolean {
+  const start = { x: boss.x + Math.cos(boss.specialAngle) * 34, y: boss.y + Math.sin(boss.specialAngle) * 34 };
+  const end = { x: start.x + Math.cos(boss.specialAngle) * BOSS_FIRE_LENGTH, y: start.y + Math.sin(boss.specialAngle) * BOSS_FIRE_LENGTH };
+  return pointToSegmentDistance(player, start, end) <= player.radius + BOSS_FIRE_WIDTH / 2;
+}
+
+function pointToSegmentDistance(point: Vec2, start: Vec2, end: Vec2): number {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared === 0) return distance(point, start);
+  const position = clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared, 0, 1);
+  return Math.hypot(point.x - (start.x + dx * position), point.y - (start.y + dy * position));
 }
 
 export function tickRuntime(runtime: AdventureRuntime, delta: number): void {

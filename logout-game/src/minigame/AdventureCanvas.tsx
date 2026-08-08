@@ -2,10 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import blacksmithSpriteSource from "../image/game/blacksmith.png";
 import heroSpriteSource from "../image/game/hero-sprites.png";
 import princessSpriteSource from "../image/game/princess-left.png";
+import dragonBossSpriteSource from "../image/dragon-boss-front-sprite-768.png";
+import rangedSkullSpriteSource from "../image/purple-flame-skull-sprite-128.png";
+import meleeBatSpriteSource from "../image/vampire-bat-sprite-128.png";
 import { useGameState } from "../state/GameStateContext";
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
+  BOSS_FIRE_CHARGE_DURATION,
+  BOSS_FIRE_LENGTH,
+  BOSS_FIRE_WIDTH,
   clamp,
   createEnemies,
   createRuntime,
@@ -31,12 +37,15 @@ type SpriteSet = {
   hero: HTMLImageElement | null;
   blacksmith: HTMLImageElement | null;
   princess: HTMLImageElement | null;
+  melee: HTMLImageElement | null;
+  ranged: HTMLImageElement | null;
+  boss: HTMLImageElement | null;
 };
 
 export function AdventureCanvas() {
   const { state, dispatch, notify } = useGameState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const spritesRef = useRef<SpriteSet>({ hero: null, blacksmith: null, princess: null });
+  const spritesRef = useRef<SpriteSet>({ hero: null, blacksmith: null, princess: null, melee: null, ranged: null, boss: null });
   const stateRef = useRef(state);
   const notifyRef = useRef(notify);
   const pendingSpawnRef = useRef<Vec2 | null>(null);
@@ -65,6 +74,9 @@ export function AdventureCanvas() {
     load("hero", heroSpriteSource);
     load("blacksmith", blacksmithSpriteSource);
     load("princess", princessSpriteSource);
+    load("melee", meleeBatSpriteSource);
+    load("ranged", rangedSkullSpriteSource);
+    load("boss", dragonBossSpriteSource);
   }, []);
 
   useEffect(() => {
@@ -280,17 +292,19 @@ function cameraFor(runtime: AdventureRuntime): Vec2 {
 
 function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paused: boolean, sprites: SpriteSet, hasGreatSword: boolean, hasU: boolean) {
   const camera = cameraFor(runtime);
+  context.imageSmoothingEnabled = false;
   context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   context.save();
   context.translate(-camera.x, -camera.y);
   drawGround(context, runtime.scene);
   drawMapObjects(context, runtime, sprites, hasU);
+  drawBossSkill(context, runtime);
   runtime.projectiles.forEach((projectile) => {
     context.fillStyle = "#b884ff";
     context.beginPath(); context.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2); context.fill();
     context.strokeStyle = "rgba(230,210,255,.7)"; context.stroke();
   });
-  runtime.enemies.forEach((currentEnemy) => drawEnemy(context, currentEnemy));
+  runtime.enemies.forEach((currentEnemy) => drawEnemy(context, currentEnemy, sprites));
   drawAttackEffect(context, runtime, hasGreatSword);
   drawHero(context, runtime, sprites.hero, hasGreatSword);
   context.restore();
@@ -460,20 +474,81 @@ function drawAttackEffect(context: CanvasRenderingContext2D, runtime: AdventureR
   context.restore();
 }
 
-function drawEnemy(context: CanvasRenderingContext2D, currentEnemy: EnemyActor) {
-  context.fillStyle = "rgba(0,0,0,.28)"; context.beginPath(); context.ellipse(currentEnemy.x, currentEnemy.y + currentEnemy.radius, currentEnemy.radius, 7, 0, 0, Math.PI * 2); context.fill();
-  if (currentEnemy.kind === "melee") {
-    context.fillStyle = "#934f45"; context.fillRect(currentEnemy.x - 15, currentEnemy.y - 14, 30, 30);
-    context.fillStyle = "#ffe19b"; context.fillRect(currentEnemy.x - 10, currentEnemy.y - 7, 5, 5); context.fillRect(currentEnemy.x + 5, currentEnemy.y - 7, 5, 5);
-  } else if (currentEnemy.kind === "ranged") {
-    context.fillStyle = "#665099"; context.beginPath(); context.arc(currentEnemy.x, currentEnemy.y, 17, 0, Math.PI * 2); context.fill();
-    context.strokeStyle = "#cbb9ff"; context.beginPath(); context.arc(currentEnemy.x, currentEnemy.y, 23 + Math.sin(currentEnemy.patternTime * 4) * 3, 0, Math.PI * 2); context.stroke();
+function drawBossSkill(context: CanvasRenderingContext2D, runtime: AdventureRuntime) {
+  const boss = runtime.enemies.find((enemy) => enemy.kind === "boss");
+  if (!boss || boss.specialPhase === "idle") return;
+  const direction = { x: Math.cos(boss.specialAngle), y: Math.sin(boss.specialAngle) };
+  const start = { x: boss.x + direction.x * 34, y: boss.y + direction.y * 34 };
+  const end = { x: start.x + direction.x * BOSS_FIRE_LENGTH, y: start.y + direction.y * BOSS_FIRE_LENGTH };
+  context.save();
+  context.lineCap = "round";
+
+  if (boss.specialPhase === "charging") {
+    const progress = 1 - boss.specialTimer / BOSS_FIRE_CHARGE_DURATION;
+    context.strokeStyle = `rgba(255,107,45,${0.08 + progress * 0.18})`;
+    context.lineWidth = BOSS_FIRE_WIDTH;
+    context.setLineDash([18, 13]);
+    context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(end.x, end.y); context.stroke();
+    context.setLineDash([]);
+    for (let index = 0; index < 7; index += 1) {
+      const orbit = boss.patternTime * 5 + index * (Math.PI * 2 / 7);
+      const radius = 28 - progress * 16 + (index % 2) * 5;
+      context.fillStyle = index % 2 ? `rgba(255,193,64,${0.5 + progress * 0.45})` : `rgba(255,76,32,${0.45 + progress * 0.4})`;
+      context.beginPath();
+      context.arc(start.x + Math.cos(orbit) * radius, start.y + Math.sin(orbit) * radius, 3 + progress * 3, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.strokeStyle = `rgba(255,220,112,${0.55 + progress * 0.4})`;
+    context.lineWidth = 4 + progress * 5;
+    context.beginPath(); context.arc(start.x, start.y, 23 - progress * 10, 0, Math.PI * 2); context.stroke();
   } else {
-    context.fillStyle = "#5e263f"; context.beginPath(); context.arc(currentEnemy.x, currentEnemy.y, 30, 0, Math.PI * 2); context.fill();
-    context.fillStyle = "#d7a0c0"; context.font = "bold 28px serif"; context.textAlign = "center"; context.fillText("王", currentEnemy.x, currentEnemy.y + 9); context.textAlign = "start";
+    const pulse = (Math.sin(boss.patternTime * 18) + 1) / 2;
+    context.strokeStyle = "rgba(128,26,18,.78)";
+    context.lineWidth = BOSS_FIRE_WIDTH + 12 + pulse * 4;
+    context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(end.x, end.y); context.stroke();
+    context.strokeStyle = "rgba(244,67,28,.92)";
+    context.lineWidth = BOSS_FIRE_WIDTH;
+    context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(end.x, end.y); context.stroke();
+    context.strokeStyle = "rgba(255,155,38,.96)";
+    context.lineWidth = 36 + pulse * 5;
+    context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(end.x, end.y); context.stroke();
+    context.strokeStyle = "rgba(255,238,136,.96)";
+    context.lineWidth = 14 + pulse * 4;
+    context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(end.x, end.y); context.stroke();
+    context.fillStyle = "rgba(255,207,70,.9)";
+    context.beginPath(); context.arc(start.x, start.y, 24 + pulse * 6, 0, Math.PI * 2); context.fill();
   }
-  context.fillStyle = "rgba(20,14,22,.8)"; context.fillRect(currentEnemy.x - 21, currentEnemy.y - currentEnemy.radius - 15, 42, 5);
-  context.fillStyle = currentEnemy.kind === "boss" ? "#e9718d" : "#e7bd67"; context.fillRect(currentEnemy.x - 20, currentEnemy.y - currentEnemy.radius - 14, 40 * (currentEnemy.hp / currentEnemy.maxHp), 3);
+  context.restore();
+}
+
+function drawEnemy(context: CanvasRenderingContext2D, currentEnemy: EnemyActor, sprites: SpriteSet) {
+  const bob = Math.round(Math.sin(currentEnemy.patternTime * (currentEnemy.kind === "boss" ? 2.2 : 5.5) + currentEnemy.phase) * (currentEnemy.kind === "boss" ? 2 : 3));
+  const shadowWidth = currentEnemy.kind === "boss" ? 64 : 20;
+  context.fillStyle = "rgba(0,0,0,.3)"; context.beginPath(); context.ellipse(currentEnemy.x, currentEnemy.y + currentEnemy.radius, shadowWidth, currentEnemy.kind === "boss" ? 13 : 7, 0, 0, Math.PI * 2); context.fill();
+
+  const sprite = sprites[currentEnemy.kind];
+  if (sprite?.complete) {
+    if (currentEnemy.kind === "boss") {
+      const breathe = 1 + Math.sin(currentEnemy.patternTime * 2.2) * 0.015;
+      const width = 190 * breathe;
+      const height = 190 / breathe;
+      context.drawImage(sprite, currentEnemy.x - width / 2, currentEnemy.y - height * 0.68 + bob, width, height);
+    } else {
+      const wingPulse = currentEnemy.kind === "melee" ? 1 + Math.sin(currentEnemy.patternTime * 8 + currentEnemy.phase) * 0.06 : 1;
+      const width = 64 * wingPulse;
+      context.drawImage(sprite, currentEnemy.x - width / 2, currentEnemy.y - 44 + bob, width, 64);
+      if (currentEnemy.kind === "ranged") {
+        context.strokeStyle = "rgba(203,185,255,.56)"; context.lineWidth = 2;
+        context.beginPath(); context.arc(currentEnemy.x, currentEnemy.y + bob, 25 + Math.sin(currentEnemy.patternTime * 4) * 3, 0, Math.PI * 2); context.stroke();
+      }
+    }
+  }
+
+  const barWidth = currentEnemy.kind === "boss" ? 140 : 48;
+  const barY = currentEnemy.y - (currentEnemy.kind === "boss" ? 142 : 55);
+  context.fillStyle = "rgba(20,14,22,.86)"; context.fillRect(currentEnemy.x - barWidth / 2 - 2, barY - 2, barWidth + 4, 8);
+  context.fillStyle = currentEnemy.kind === "boss" ? "#e65379" : "#e7bd67";
+  context.fillRect(currentEnemy.x - barWidth / 2, barY, barWidth * (currentEnemy.hp / currentEnemy.maxHp), 4);
 }
 
 function drawBuilding(context: CanvasRenderingContext2D, rect: Rect, variant: number) {

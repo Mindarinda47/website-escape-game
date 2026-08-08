@@ -13,7 +13,7 @@ import morningRoomImage from "../image/아침빛이오래머무는방.png";
 import gangrimFcImage from "../image/강림FC.png";
 import dorimFcImage from "../image/도림FC.png";
 import alleyBusinessNewsImage from "../image/골목상권뉴스썸네일.png";
-import adventureHeroSprites from "../image/game/hero-sprites.png";
+import gameAdvertisementImage from "../image/게임광고배너.png";
 
 type Props = { onEndingAnswer: () => void };
 
@@ -126,7 +126,7 @@ export function PortalPage({ onEndingAnswer }: Props) {
           </div>
 
           <button className={`game-ad game-ad-vertical portal-destination ${gameCompleted ? "completed" : ""}`} onClick={() => open("ad-game")}>
-            <span className="ad-label">CLASSIC ACTION RPG</span><div className="pixel-hero sprite-ad-hero" style={{ backgroundImage: `url(${adventureHeroSprites})` }} aria-hidden="true" /><span className="game-ad-copy"><strong>G의 전설</strong><span>초원 너머의 모험이 기다립니다</span></span><b>PLAY</b>
+            <img className="game-ad-banner-image" src={gameAdvertisementImage} alt="G의 전설, 지금 바로 플레이" />
           </button>
         </div>
       </div>
