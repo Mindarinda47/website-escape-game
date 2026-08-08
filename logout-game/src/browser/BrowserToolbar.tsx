@@ -8,9 +8,11 @@ type Props = {
   onRefresh: () => void;
   onFind: () => void;
   onReset: () => void;
+  onFullscreen: () => void;
+  fullscreen: boolean;
 };
 
-export function BrowserToolbar({ onRefresh, onFind, onReset }: Props) {
+export function BrowserToolbar({ onRefresh, onFind, onReset, onFullscreen, fullscreen }: Props) {
   const { state, dispatch } = useGameState();
   const [menuOpen, setMenuOpen] = useState(false);
   return (
@@ -29,6 +31,7 @@ export function BrowserToolbar({ onRefresh, onFind, onReset }: Props) {
         <AddressBar />
         <div className="tool-buttons">
           <button aria-label="페이지 내 찾기" title="페이지 내 찾기" onClick={onFind}>⌕</button>
+          <button aria-label={fullscreen ? "전체화면 종료" : "전체화면"} title={fullscreen ? "전체화면 종료" : "전체화면"} aria-pressed={fullscreen} onClick={onFullscreen}>{fullscreen ? "⤡" : "⛶"}</button>
           <button
             aria-label={state.browser.darkMode ? "라이트 모드 켜기" : "다크 모드 켜기"}
             title="화면 테마"

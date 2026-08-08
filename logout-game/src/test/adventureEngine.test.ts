@@ -43,11 +43,19 @@ describe("G의 전설 엔진", () => {
     try {
       const runtime = createRuntime("dungeon", 6, 6, { x: 400, y: 240 });
       runtime.enemies = [runtime.enemies.find((enemy) => enemy.kind === "ranged")!];
+      Object.assign(runtime.enemies[0], { x: 470, y: 240 });
       runtime.enemies[0].cooldown = 0;
       updateEnemies(runtime, 0.1, []);
       expect(runtime.projectiles.length).toBeGreaterThan(0);
     } finally {
       random.mockRestore();
     }
+  });
+
+  it("moves an exit spawn away from a blocking obstacle before play resumes", () => {
+    const runtime = createRuntime("world", 6, 6, { x: 1275, y: 100 });
+    const start = { x: runtime.player.x, y: runtime.player.y };
+    movePlayer(runtime, new Set(["s"]), 0.1);
+    expect(runtime.player.y).toBeGreaterThan(start.y);
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdGamePage } from "../pages/AdGamePage";
 import { NewsPage } from "../pages/NewsPage";
 import { PortalPage } from "../pages/PortalPage";
@@ -16,10 +16,23 @@ type Props = {
 
 export function BrowserShell({ onEndingAnswer, onReset }: Props) {
   const { state, dispatch } = useGameState();
+  const appRef = useRef<HTMLDivElement>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [resetOpen, setResetOpen] = useState(false);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
+  const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+
+  useEffect(() => {
+    const change = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", change);
+    return () => document.removeEventListener("fullscreenchange", change);
+  }, []);
+
+  async function toggleFullscreen() {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await appRef.current?.requestFullscreen();
+  }
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -49,9 +62,9 @@ export function BrowserShell({ onEndingAnswer, onReset }: Props) {
   }
 
   return (
-    <div className={`game-app ${state.browser.darkMode ? "dark" : "light"}`}>
+    <div ref={appRef} className={`game-app ${state.browser.darkMode ? "dark" : "light"}`}>
       <div className="browser-window">
-        <BrowserToolbar onRefresh={() => setRefreshKey((key) => key + 1)} onFind={() => setFindOpen(true)} onReset={() => setResetOpen(true)} />
+        <BrowserToolbar onRefresh={() => setRefreshKey((key) => key + 1)} onFind={() => setFindOpen(true)} onReset={() => setResetOpen(true)} onFullscreen={toggleFullscreen} fullscreen={fullscreen} />
         {findOpen && <FindInPage page={state.currentPage} onClose={() => setFindOpen(false)} />}
         <div key={`${state.currentPage}-${refreshKey}`} className={`page-viewport zoom-${state.browser.zoomPercent}`} data-page={state.currentPage}>
           {page}

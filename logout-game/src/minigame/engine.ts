@@ -27,18 +27,27 @@ function enemy(id: string, kind: EnemyKind, x: number, y: number): EnemyActor {
 export function createEnemies(scene: AdventureRuntime["scene"]): EnemyActor[] {
   if (scene === "dungeon") {
     return [
-      enemy("blade-1", "melee", 120, 240), enemy("blade-2", "melee", 650, 235), enemy("blade-3", "melee", 380, 110),
-      enemy("wisp-1", "ranged", 230, 185), enemy("wisp-2", "ranged", 535, 345),
+      enemy("blade-1", "melee", 185, 620), enemy("blade-2", "melee", 650, 330), enemy("blade-3", "melee", 930, 850),
+      enemy("blade-4", "melee", 1450, 620), enemy("blade-5", "melee", 1780, 1120), enemy("blade-6", "melee", 650, 1210),
+      enemy("wisp-1", "ranged", 390, 860), enemy("wisp-2", "ranged", 1190, 300), enemy("wisp-3", "ranged", 1680, 860),
+      enemy("wisp-4", "ranged", 1350, 1420),
     ];
   }
-  if (scene === "boss") return [enemy("morgas", "boss", 384, 150)];
+  if (scene === "castle-1") {
+    return [enemy("guard-1", "melee", 300, 470), enemy("guard-2", "melee", 1180, 430), enemy("seer-1", "ranged", 750, 650)];
+  }
+  if (scene === "castle-2") {
+    return [enemy("guard-3", "melee", 330, 700), enemy("guard-4", "melee", 1170, 700), enemy("seer-2", "ranged", 350, 250), enemy("seer-3", "ranged", 1150, 250)];
+  }
+  if (scene === "boss") return [enemy("morgas", "boss", 650, 230)];
   return [];
 }
 
 export function createRuntime(scene: AdventureRuntime["scene"], hp = 6, maxHp = 6, spawn = scenes[scene].spawn): AdventureRuntime {
+  const safeSpawn = resolveSafeSpawn(scene, spawn, 14);
   return {
     scene,
-    player: { ...spawn, radius: 14, hp, maxHp, direction: "down", moving: false, walkTime: 0 },
+    player: { ...safeSpawn, radius: 14, hp, maxHp, direction: "down", moving: false, walkTime: 0 },
     enemies: createEnemies(scene),
     projectiles: [],
     attackTimer: 0,
@@ -55,16 +64,32 @@ function circleHitsRect(x: number, y: number, radius: number, rect: Rect): boole
   return Math.hypot(x - nearestX, y - nearestY) < radius;
 }
 
-function canOccupy(actor: Pick<Actor, "radius">, x: number, y: number, obstacles: Rect[]): boolean {
-  if (x < actor.radius || x > CANVAS_WIDTH - actor.radius || y < 48 + actor.radius || y > CANVAS_HEIGHT - actor.radius) return false;
+function canOccupy(actor: Pick<Actor, "radius">, x: number, y: number, obstacles: Rect[], width: number, height: number): boolean {
+  if (x < actor.radius || x > width - actor.radius || y < actor.radius || y > height - actor.radius) return false;
   return !obstacles.some((rect) => circleHitsRect(x, y, actor.radius, rect));
 }
 
-function moveActor(actor: Actor, dx: number, dy: number, obstacles: Rect[]): void {
+export function resolveSafeSpawn(scene: AdventureRuntime["scene"], spawn: Vec2, radius: number): Vec2 {
+  const definition = scenes[scene];
+  const actor = { radius };
+  if (canOccupy(actor, spawn.x, spawn.y, definition.obstacles, definition.width, definition.height)) return { ...spawn };
+  for (let range = 16; range <= 192; range += 16) {
+    for (let y = -range; y <= range; y += 16) {
+      for (let x = -range; x <= range; x += 16) {
+        if (Math.max(Math.abs(x), Math.abs(y)) !== range) continue;
+        const candidate = { x: spawn.x + x, y: spawn.y + y };
+        if (canOccupy(actor, candidate.x, candidate.y, definition.obstacles, definition.width, definition.height)) return candidate;
+      }
+    }
+  }
+  return { ...definition.spawn };
+}
+
+function moveActor(actor: Actor, dx: number, dy: number, obstacles: Rect[], width: number, height: number): void {
   const nextX = actor.x + dx;
   const nextY = actor.y + dy;
-  if (canOccupy(actor, nextX, actor.y, obstacles)) actor.x = nextX;
-  if (canOccupy(actor, actor.x, nextY, obstacles)) actor.y = nextY;
+  if (canOccupy(actor, nextX, actor.y, obstacles, width, height)) actor.x = nextX;
+  if (canOccupy(actor, actor.x, nextY, obstacles, width, height)) actor.y = nextY;
 }
 
 export function movePlayer(runtime: AdventureRuntime, keys: Set<string>, delta: number, obstacles = scenes[runtime.scene].obstacles): void {
@@ -81,7 +106,8 @@ export function movePlayer(runtime: AdventureRuntime, keys: Set<string>, delta: 
   else if (vertical < 0) runtime.player.direction = "up";
   else runtime.player.direction = "down";
   runtime.player.walkTime += delta;
-  moveActor(runtime.player, horizontal * 155 * delta, vertical * 155 * delta, obstacles);
+  const scene = scenes[runtime.scene];
+  moveActor(runtime.player, horizontal * 155 * delta, vertical * 155 * delta, obstacles, scene.width, scene.height);
 }
 
 function fireAtPlayer(runtime: AdventureRuntime, source: Vec2, speed: number, spread = 0): void {
@@ -90,6 +116,7 @@ function fireAtPlayer(runtime: AdventureRuntime, source: Vec2, speed: number, sp
 }
 
 function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: number, obstacles: Rect[]): void {
+  const scene = scenes[runtime.scene];
   const dx = runtime.player.x - enemyActor.x;
   const dy = runtime.player.y - enemyActor.y;
   const gap = Math.hypot(dx, dy) || 1;
@@ -102,7 +129,7 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
     const speed = charging && gap < 220 ? 74 : 42;
     const moveX = charging ? towardX : -towardY * side;
     const moveY = charging ? towardY : towardX * side;
-    moveActor(enemyActor, moveX * speed * delta, moveY * speed * delta, obstacles);
+    moveActor(enemyActor, moveX * speed * delta, moveY * speed * delta, obstacles, scene.width, scene.height);
     return;
   }
 
@@ -110,7 +137,7 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
     const desired = gap < 125 ? -1 : gap > 205 ? 1 : 0;
     const moveX = desired === 0 ? -towardY * side : towardX * desired;
     const moveY = desired === 0 ? towardX * side : towardY * desired;
-    moveActor(enemyActor, moveX * 58 * delta, moveY * 58 * delta, obstacles);
+    moveActor(enemyActor, moveX * 58 * delta, moveY * 58 * delta, obstacles, scene.width, scene.height);
     if (enemyActor.cooldown <= 0 && gap < 310) {
       fireAtPlayer(runtime, enemyActor, 130, (Math.random() - 0.5) * 0.18);
       enemyActor.cooldown = 1.35 + Math.random() * 0.45;
@@ -119,9 +146,9 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
   }
 
   const cycle = enemyActor.patternTime % 7;
-  if (cycle < 2.4) moveActor(enemyActor, towardX * 82 * delta, towardY * 82 * delta, obstacles);
-  else if (cycle < 4.3) moveActor(enemyActor, -towardY * side * 62 * delta, towardX * side * 62 * delta, obstacles);
-  else moveActor(enemyActor, -towardX * 45 * delta, -towardY * 45 * delta, obstacles);
+  if (cycle < 2.4) moveActor(enemyActor, towardX * 82 * delta, towardY * 82 * delta, obstacles, scene.width, scene.height);
+  else if (cycle < 4.3) moveActor(enemyActor, -towardY * side * 62 * delta, towardX * side * 62 * delta, obstacles, scene.width, scene.height);
+  else moveActor(enemyActor, -towardX * 45 * delta, -towardY * 45 * delta, obstacles, scene.width, scene.height);
   if (enemyActor.cooldown <= 0) {
     if (cycle > 5.4) {
       for (let index = 0; index < 8; index += 1) {
@@ -147,11 +174,12 @@ export function updateEnemies(runtime: AdventureRuntime, delta: number, obstacle
 }
 
 export function updateProjectiles(runtime: AdventureRuntime, delta: number, obstacles = scenes[runtime.scene].obstacles): void {
+  const scene = scenes[runtime.scene];
   runtime.projectiles = runtime.projectiles.filter((projectile) => {
     projectile.x += projectile.vx * delta;
     projectile.y += projectile.vy * delta;
     projectile.life -= delta;
-    if (projectile.life <= 0 || projectile.x < 0 || projectile.x > CANVAS_WIDTH || projectile.y < 45 || projectile.y > CANVAS_HEIGHT) return false;
+    if (projectile.life <= 0 || projectile.x < 0 || projectile.x > scene.width || projectile.y < 0 || projectile.y > scene.height) return false;
     return !obstacles.some((rect) => circleHitsRect(projectile.x, projectile.y, projectile.radius, rect));
   });
 }

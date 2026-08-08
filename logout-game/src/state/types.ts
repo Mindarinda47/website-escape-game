@@ -10,7 +10,7 @@ export type LetterClueId =
 export type ItemId = "water" | "key";
 export type ItemState = "missing" | "owned" | "used";
 export type ZoomPercent = 75 | 100 | 125 | 150;
-export type Checkpoint = "village" | "world" | "dungeon" | "boss" | "secret" | "rescue" | "clear";
+export type Checkpoint = "village" | "world" | "dungeon" | "castle-1" | "castle-2" | "boss" | "secret" | "rescue" | "clear";
 
 export type GameState = {
   version: 1;

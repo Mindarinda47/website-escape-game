@@ -2,7 +2,7 @@ import { initialState } from "./initialState";
 import type { Checkpoint, GameState } from "./types";
 
 export const STORAGE_KEY = "logout-game-state-v1";
-const checkpoints: Checkpoint[] = ["village", "world", "dungeon", "boss", "secret", "rescue", "clear"];
+const checkpoints: Checkpoint[] = ["village", "world", "dungeon", "castle-1", "castle-2", "boss", "secret", "rescue", "clear"];
 
 export function loadGameState(storage: Pick<Storage, "getItem"> = localStorage): GameState {
   try {

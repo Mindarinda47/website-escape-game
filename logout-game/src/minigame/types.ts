@@ -42,6 +42,8 @@ export type SceneDefinition = {
   title: string;
   objective: string;
   ground: "village" | "grass" | "dungeon" | "castle" | "secret" | "rescue";
+  width: number;
+  height: number;
   spawn: Vec2;
   obstacles: Rect[];
   exits: SceneExit[];
