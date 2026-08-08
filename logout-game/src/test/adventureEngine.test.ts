@@ -64,7 +64,16 @@ describe("G의 전설 엔진", () => {
     const startX = boss.x;
     performAttack(bossRuntime, 1);
     expect(boss.x - startX).toBeGreaterThan(0);
-    expect(boss.x - startX).toBeLessThanOrEqual(8.01);
+    expect(boss.x - startX).toBeLessThanOrEqual(14.01);
+  });
+
+  it("does not damage an enemy through a wall", () => {
+    const runtime = createRuntime("dungeon", 6, 6, { x: 400, y: 170 });
+    runtime.player.direction = "down";
+    runtime.enemies = [runtime.enemies[0]];
+    Object.assign(runtime.enemies[0], { x: 400, y: 255 });
+    performAttack(runtime, 1);
+    expect(runtime.enemies[0].hp).toBe(3);
   });
 
   it("gives ranged enemies a projectile attack pattern", () => {
@@ -84,7 +93,7 @@ describe("G의 전설 엔진", () => {
   it("charges for two seconds before the boss breathes fire for three seconds", () => {
     const runtime = createRuntime("boss", 6, 6, { x: 900, y: 230 });
     const boss = runtime.enemies[0];
-    expect(boss.maxHp).toBe(30);
+    expect(boss.maxHp).toBe(60);
     boss.specialCooldown = 0;
     updateEnemies(runtime, 0.1, []);
     expect(boss.specialPhase).toBe("charging");
@@ -115,5 +124,15 @@ describe("G의 전설 엔진", () => {
     const start = { x: runtime.player.x, y: runtime.player.y };
     movePlayer(runtime, new Set(["s"]), 0.1);
     expect(runtime.player.y).toBeGreaterThan(start.y);
+  });
+
+  it("blocks the village well while leaving the paved route below it open", () => {
+    const wellApproach = createRuntime("village", 6, 6, { x: 520, y: 550 });
+    movePlayer(wellApproach, new Set(["w"]), 0.3);
+    expect(wellApproach.player.y).toBe(550);
+
+    const lowerRoad = createRuntime("village", 6, 6, { x: 520, y: 640 });
+    movePlayer(lowerRoad, new Set(["s"]), 0.3);
+    expect(lowerRoad.player.y).toBeGreaterThan(640);
   });
 });

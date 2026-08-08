@@ -28,7 +28,7 @@ export function directionVector(direction: Direction): Vec2 {
 }
 
 function enemy(id: string, kind: EnemyKind, x: number, y: number): EnemyActor {
-  const maxHp = kind === "boss" ? 30 : 3;
+  const maxHp = kind === "boss" ? 60 : 3;
   return {
     id, kind, x, y, radius: kind === "boss" ? 42 : 16, hp: maxHp, maxHp, cooldown: 0.5,
     patternTime: 0, phase: Math.random() * Math.PI * 2, specialPhase: "idle", specialTimer: 0,
@@ -263,7 +263,8 @@ export function performAttack(runtime: AdventureRuntime, damage: number): EnemyA
   const strikeCenter = { x: runtime.player.x + direction.x * 42, y: runtime.player.y + direction.y * 42 };
   const defeated: EnemyActor[] = [];
   for (const currentEnemy of runtime.enemies) {
-    if (distance(strikeCenter, currentEnemy) <= currentEnemy.radius + 35) {
+    if (distance(strikeCenter, currentEnemy) <= currentEnemy.radius + 35
+      && hasClearAttackPath(runtime.player, currentEnemy, scenes[runtime.scene].obstacles)) {
       currentEnemy.hp -= damage;
       knockEnemyBack(runtime, currentEnemy, strikeCenter, direction);
       if (currentEnemy.hp <= 0) defeated.push(currentEnemy);
@@ -279,7 +280,7 @@ function knockEnemyBack(runtime: AdventureRuntime, currentEnemy: EnemyActor, str
     ? { x: (currentEnemy.x - strikeCenter.x) / gap, y: (currentEnemy.y - strikeCenter.y) / gap }
     : fallbackDirection;
   const minimumOutsideRange = currentEnemy.radius + 41 - gap;
-  const distanceToPush = currentEnemy.kind === "boss" ? 8 : Math.max(34, minimumOutsideRange);
+  const distanceToPush = currentEnemy.kind === "boss" ? 14 : Math.max(68, minimumOutsideRange);
   const scene = scenes[runtime.scene];
   const angle = Math.atan2(direction.y, direction.x);
   const alternatives = [0, 0.42, -0.42, 0.82, -0.82, Math.PI / 2, -Math.PI / 2];
@@ -288,6 +289,18 @@ function knockEnemyBack(runtime: AdventureRuntime, currentEnemy: EnemyActor, str
     const dy = Math.sin(angle + offset) * distanceToPush;
     if (tryKnockbackPath(currentEnemy, dx, dy, scene.obstacles, scene.width, scene.height)) return;
   }
+}
+
+function hasClearAttackPath(start: Vec2, end: Vec2, obstacles: Rect[]): boolean {
+  const pathLength = distance(start, end);
+  const steps = Math.max(1, Math.ceil(pathLength / 4));
+  for (let step = 1; step < steps; step += 1) {
+    const progress = step / steps;
+    const x = start.x + (end.x - start.x) * progress;
+    const y = start.y + (end.y - start.y) * progress;
+    if (obstacles.some((rect) => circleHitsRect(x, y, 2, rect))) return false;
+  }
+  return true;
 }
 
 function tryKnockbackPath(actor: EnemyActor, dx: number, dy: number, obstacles: Rect[], width: number, height: number): boolean {

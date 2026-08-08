@@ -51,9 +51,9 @@ export const scenes: Record<Checkpoint, SceneDefinition> = {
     obstacles: [
       { x: 90, y: 90, width: 250, height: 180 },
       { x: 785, y: 80, width: 270, height: 195 },
-      { x: 460, y: 310, width: 116, height: 74 },
-      { x: 90, y: 680, width: 480, height: 30 },
+      { x: 90, y: 680, width: 340, height: 30 },
       { x: 780, y: 650, width: 260, height: 30 },
+      { x: 488, y: 468, width: 64, height: 54 },
     ],
     exits: [{ rect: { x: 1172, y: 355, width: 28, height: 150 }, to: "world", spawn: { x: 90, y: 600 }, label: "초원길" }],
   },
@@ -65,13 +65,12 @@ export const scenes: Record<Checkpoint, SceneDefinition> = {
     height: 1200,
     spawn: { x: 90, y: 600 },
     obstacles: [
-      { x: 180, y: 80, width: 150, height: 170 }, { x: 590, y: 70, width: 120, height: 150 },
+      { x: 180, y: 80, width: 150, height: 170 },
       { x: 690, y: 95, width: 160, height: 145 }, { x: 1040, y: 60, width: 145, height: 190 },
-      { x: 1270, y: 80, width: 130, height: 175 }, { x: 1600, y: 300, width: 130, height: 180 },
+      { x: 1600, y: 300, width: 130, height: 180 },
       { x: 210, y: 860, width: 170, height: 180 }, { x: 520, y: 930, width: 145, height: 155 },
       { x: 850, y: 875, width: 165, height: 190 }, { x: 1160, y: 920, width: 145, height: 160 },
-      { x: 1480, y: 850, width: 175, height: 190 }, { x: 760, y: 410, width: 120, height: 160 },
-      { x: 990, y: 610, width: 130, height: 150 }, { x: 1340, y: 520, width: 120, height: 150 },
+      { x: 1340, y: 520, width: 120, height: 150 },
     ],
     exits: [
       { rect: { x: 0, y: 520, width: 32, height: 170 }, to: "village", spawn: { x: 1120, y: 430 }, label: "새벽바람 마을" },

@@ -63,7 +63,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .address-security { margin-right: 7px; color: var(--muted); }
 .address-bar input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 13px; }
 .address-special { animation: address-pulse 1.8s ease-in-out 2; }
-.address-clue { width: 30px; height: 28px; border: 1px solid #d4a844; border-radius: 7px; color: #6e4b00; background: #ffe49a; font-weight: 900; cursor: pointer; animation: clue-glow 1.4s infinite; }
+.address-inline { display:flex;align-items:center;flex:1;min-width:0;height:100%;color:var(--text);font-size:13px;white-space:pre;cursor:text; }
+.address-inline-letter { padding:0;border:0;color:inherit;background:transparent;font-family:inherit;font-size:1em;font-weight:800;line-height:1;cursor:pointer;animation:clue-glow 1.4s infinite; }
+.address-inline-letter:hover,.address-inline-letter:focus-visible { color:#b47b08; }
+.address-inline-blank { display:inline-block;width:.72em; }
 .zoom-control select { height: 32px; width: 70px; padding: 0 6px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--surface-soft); cursor: pointer; }
 .options-wrap { position: relative; }
 .options-menu { position: absolute; top: 41px; right: 0; width: 150px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 10px 30px rgba(0,0,0,.16); }

@@ -421,6 +421,7 @@ function drawPixelPath(context: CanvasRenderingContext2D, points: Vec2[], width:
 function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRuntime, sprites: SpriteSet, hasU: boolean) {
   const scene = scenes[runtime.scene];
   scene.obstacles.forEach((obstacle, index) => {
+    if (scene.ground === "village" && pointInRect(VILLAGE_WELL, obstacle)) return;
     if (scene.ground === "village" && index < 2) drawBuilding(context, obstacle, index);
     else if (scene.ground === "village") drawFenceOrStone(context, obstacle, index === 2 ? "#86775d" : "#6b5338");
     else if (scene.ground === "grass" || scene.ground === "secret") drawTreeCluster(context, obstacle);
