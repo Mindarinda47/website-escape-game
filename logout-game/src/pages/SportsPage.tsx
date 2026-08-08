@@ -13,10 +13,13 @@ type MatchSimulation = {
   ball: { x: number; y: number; vx: number; vy: number };
   players: SimPlayer[];
   commentary: string;
+  kickCooldown: number;
 };
 
-const MATCH_SECONDS = 24;
+const MATCH_SECONDS = 36;
 const TICK_SECONDS = 0.1;
+const CONTROL_DISTANCE = 1.45;
+const CONTEST_DISTANCE = 1.75;
 
 const formation: SimPlayer[] = [
   { id: "h-gk", team: "home", x: 7, y: 50, baseX: 7, baseY: 50, goalkeeper: true },
@@ -39,6 +42,7 @@ function createSimulation(): MatchSimulation {
     ball: { x: 50, y: 50, vx: (Math.random() - 0.5) * 0.8, vy: (Math.random() - 0.5) * 0.5 },
     players: formation.map((player) => ({ ...player })),
     commentary: "양 팀 선수들이 각자의 위치를 잡고 있습니다.",
+    kickCooldown: 0,
   };
 }
 
@@ -54,21 +58,30 @@ function moveToward(player: SimPlayer, targetX: number, targetY: number, speed: 
   return { ...player, x: player.x + (dx / length) * step, y: player.y + (dy / length) * step };
 }
 
-function nearestPlayer(players: SimPlayer[], team: Team, ball: MatchSimulation["ball"]) {
-  return players.filter((player) => player.team === team).reduce((nearest, player) => distance(player, ball) < distance(nearest, ball) ? player : nearest);
+function nearestPlayer(players: SimPlayer[], team: Team, ball: MatchSimulation["ball"], outfieldOnly = false) {
+  return players
+    .filter((player) => player.team === team && (!outfieldOnly || !player.goalkeeper))
+    .reduce((nearest, player) => distance(player, ball) < distance(nearest, ball) ? player : nearest);
+}
+
+function nearestOpponentDistance(players: SimPlayer[], player: SimPlayer) {
+  const opponent: Team = player.team === "home" ? "away" : "home";
+  return Math.min(...players.filter((candidate) => candidate.team === opponent).map((candidate) => distance(candidate, player)));
 }
 
 function stepSimulation(current: MatchSimulation): MatchSimulation {
   if (current.elapsed >= MATCH_SECONDS) return current;
 
-  const homeChaser = nearestPlayer(current.players, "home", current.ball).id;
-  const awayChaser = nearestPlayer(current.players, "away", current.ball).id;
+  const homeChaser = nearestPlayer(current.players, "home", current.ball, true).id;
+  const awayChaser = nearestPlayer(current.players, "away", current.ball, true).id;
+  const chaseX = Math.max(3, Math.min(97, current.ball.x + current.ball.vx * 1.4));
+  const chaseY = Math.max(3, Math.min(97, current.ball.y + current.ball.vy * 1.4));
   const players = current.players.map((player) => {
     if (player.goalkeeper) {
       const targetY = Math.max(34, Math.min(66, current.ball.y));
       return moveToward(player, player.baseX, targetY, 0.62);
     }
-    if (player.id === homeChaser || player.id === awayChaser) return moveToward(player, current.ball.x, current.ball.y, 1.02);
+    if (player.id === homeChaser || player.id === awayChaser) return moveToward(player, chaseX, chaseY, 1.02);
     const fieldShift = (current.ball.x - 50) * 0.13;
     const targetX = Math.max(10, Math.min(90, player.baseX + fieldShift));
     const targetY = player.baseY + (current.ball.y - 50) * 0.08;
@@ -84,23 +97,50 @@ function stepSimulation(current: MatchSimulation): MatchSimulation {
   let homeScore = current.homeScore;
   let awayScore = current.awayScore;
   let commentary = current.commentary;
+  let kickCooldown = Math.max(0, current.kickCooldown - TICK_SECONDS);
 
-  const closest = players.reduce((nearest, player) => distance(player, ball) < distance(nearest, ball) ? player : nearest);
-  if (distance(closest, ball) < 2.7 && Math.hypot(ball.vx, ball.vy) < 3.4) {
+  const closestHome = nearestPlayer(players, "home", ball);
+  const closestAway = nearestPlayer(players, "away", ball);
+  const homeDistance = distance(closestHome, ball);
+  const awayDistance = distance(closestAway, ball);
+  const contested = homeDistance < CONTEST_DISTANCE && awayDistance < CONTEST_DISTANCE;
+
+  if (contested && kickCooldown <= 0) {
+    const angle = Math.random() * Math.PI * 2;
+    const power = 2.6 + Math.random() * 1.6;
+    ball.vx = Math.cos(angle) * power;
+    ball.vy = Math.sin(angle) * power;
+    ball.x += Math.cos(angle) * 1.8;
+    ball.y += Math.sin(angle) * 1.8;
+    kickCooldown = 0.45;
+    commentary = "치열한 경합 끝에 공이 예상하지 못한 방향으로 튕겨 나갑니다.";
+  } else {
+    const closest = homeDistance < awayDistance ? closestHome : closestAway;
+    const ballSpeed = Math.hypot(ball.vx, ball.vy);
+    if (distance(closest, ball) < CONTROL_DISTANCE && ballSpeed < 2.8 && kickCooldown <= 0) {
     const direction = closest.team === "home" ? 1 : -1;
     const inShootingRange = closest.team === "home" ? closest.x > 63 : closest.x < 37;
-    const targetY = inShootingRange ? 50 + (Math.random() - 0.5) * 25 : closest.y + (Math.random() - 0.5) * 35;
-    const targetX = closest.team === "home" ? 101 : -1;
+      const teammates = players.filter((player) => player.team === closest.team && player.id !== closest.id && !player.goalkeeper);
+      const passTarget = teammates.reduce((best, candidate) => {
+        const score = direction * (candidate.x - closest.x) * 0.75 + nearestOpponentDistance(players, candidate) * 0.45 - distance(closest, candidate) * 0.08;
+        const bestScore = direction * (best.x - closest.x) * 0.75 + nearestOpponentDistance(players, best) * 0.45 - distance(closest, best) * 0.08;
+        return score > bestScore ? candidate : best;
+      });
+      const targetX = inShootingRange ? (closest.team === "home" ? 101 : -1) : passTarget.x + direction * 1.5;
+      const targetY = inShootingRange ? 50 + (Math.random() - 0.5) * 22 : passTarget.y + (Math.random() - 0.5) * 5;
     const dx = targetX - closest.x;
     const dy = targetY - closest.y;
     const length = Math.hypot(dx, dy) || 1;
-    const power = inShootingRange ? 3.25 : 2.35;
+      const power = inShootingRange ? 3.55 : Math.min(3.1, 2.05 + distance(closest, passTarget) * 0.035);
     ball.vx = (dx / length) * power;
     ball.vy = (dy / length) * power;
-    ball.x += direction * 1.2;
+      ball.x = closest.x + (dx / length) * 1.7;
+      ball.y = closest.y + (dy / length) * 1.7;
+      kickCooldown = 0.35;
     commentary = inShootingRange
       ? `${closest.team === "home" ? "강림FC" : "도림FC"}가 골문을 향해 슈팅합니다.`
-      : `${closest.team === "home" ? "강림FC" : "도림FC"}가 전방으로 공을 연결합니다.`;
+        : `${closest.team === "home" ? "강림FC" : "도림FC"}가 빈 공간의 동료에게 패스합니다.`;
+    }
   }
 
   if (ball.y <= 2 || ball.y >= 98) {
@@ -112,6 +152,7 @@ function stepSimulation(current: MatchSimulation): MatchSimulation {
     if (ball.y >= 35 && ball.y <= 65) {
       homeScore += 1;
       Object.assign(ball, { x: 50, y: 50, vx: -0.65, vy: (Math.random() - 0.5) * 0.45 });
+      kickCooldown = 0.55;
       commentary = "강림FC의 골입니다. 도림FC가 중앙에서 경기를 재개합니다.";
     } else {
       ball.x = 98;
@@ -122,6 +163,7 @@ function stepSimulation(current: MatchSimulation): MatchSimulation {
     if (ball.y >= 35 && ball.y <= 65) {
       awayScore += 1;
       Object.assign(ball, { x: 50, y: 50, vx: 0.65, vy: (Math.random() - 0.5) * 0.45 });
+      kickCooldown = 0.55;
       commentary = "도림FC의 골입니다. 강림FC가 중앙에서 경기를 재개합니다.";
     } else {
       ball.x = 2;
@@ -130,7 +172,7 @@ function stepSimulation(current: MatchSimulation): MatchSimulation {
     }
   }
 
-  return { elapsed: Math.min(MATCH_SECONDS, current.elapsed + TICK_SECONDS), homeScore, awayScore, ball, players, commentary };
+  return { elapsed: Math.min(MATCH_SECONDS, current.elapsed + TICK_SECONDS), homeScore, awayScore, ball, players, commentary, kickCooldown };
 }
 
 function outcomeOf(homeScore: number, awayScore: number): Prediction {
@@ -185,7 +227,7 @@ export function SportsPage() {
   return (
     <main className="sports-page page-inner">
       <header className="site-header sports-header"><div><span className="site-kicker">경기 전의 모든 순간</span><h1>하프타임 스포츠</h1></div><div className="live-chip">12라운드 · 오늘</div></header>
-      <section className="match-hero">
+      <section className="match-hero sports-match-hero">
         <div className="team home-team"><span className="team-crest"><img src={gangrimFcImage} alt="" /></span><h2>강림FC</h2><small>HOME</small></div>
         <div className="score-board"><span>{running ? `${minute}'` : matchDone ? "종료" : "예정"}</span><strong>{running || matchDone ? `${homeScore} : ${awayScore}` : "- : -"}</strong><small>오늘 · 해질녘 구장</small></div>
         <div className="team away-team"><span className="team-crest"><img src={dorimFcImage} alt="" /></span><h2>도림FC</h2><small>AWAY</small></div>
