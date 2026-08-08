@@ -10,6 +10,15 @@ describe("G의 전설 엔진", () => {
     expect(runtime.player.y).toBeGreaterThan(240);
   });
 
+  it("applies the run multiplier without changing direction rules", () => {
+    const walking = createRuntime("world", 6, 6, { x: 900, y: 600 });
+    const running = createRuntime("world", 6, 6, { x: 900, y: 600 });
+    movePlayer(walking, new Set(["d"]), 0.1, [], 1);
+    movePlayer(running, new Set(["d"]), 0.1, [], 1.55);
+    expect(running.player.x - 900).toBeCloseTo((walking.player.x - 900) * 1.55);
+    expect(running.player.y).toBe(600);
+  });
+
   it("defeats a normal enemy in three basic hits or two great-sword hits", () => {
     const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
     try {

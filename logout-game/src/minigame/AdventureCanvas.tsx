@@ -45,7 +45,9 @@ export function AdventureCanvas() {
   const attackHeldRef = useRef(false);
   const interactHeldRef = useRef(false);
   const transitionLockedRef = useRef(false);
+  const runningRef = useRef(false);
   const [paused, setPaused] = useState(false);
+  const [running, setRunning] = useState(false);
   const [status, setStatus] = useState(sceneCopy[state.adGame.checkpoint].objective);
 
   useEffect(() => {
@@ -84,6 +86,10 @@ export function AdventureCanvas() {
       const key = event.key.toLowerCase();
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
       if (key === "p") setPaused((value) => !value);
+      if (key === "shift" && !event.repeat) {
+        runningRef.current = !runningRef.current;
+        setRunning(runningRef.current);
+      }
       keysRef.current.add(key === " " ? "space" : key);
     };
     const onKeyUp = (event: KeyboardEvent) => keysRef.current.delete(event.key === " " ? "space" : event.key.toLowerCase());
@@ -184,7 +190,7 @@ export function AdventureCanvas() {
       lastTimeRef.current = time;
       if (!paused && runtime.scene !== "clear") {
         tickRuntime(runtime, delta);
-        movePlayer(runtime, keysRef.current, delta);
+        movePlayer(runtime, keysRef.current, delta, scenes[runtime.scene].obstacles, runningRef.current ? 1.55 : 1);
         if (["dungeon", "castle-1", "castle-2", "boss"].includes(runtime.scene)) {
           updateEnemies(runtime, delta);
           updateProjectiles(runtime, delta);
@@ -236,6 +242,7 @@ export function AdventureCanvas() {
           <b>{state.adGame.hp}/{state.adGame.maxHp}</b>
           <span>EXP {state.adGame.exp}/{nextLevelExp}</span>
           <span>{state.adGame.gold}G</span>
+          <span className={running ? "movement-mode running" : "movement-mode"}>{running ? "RUN" : "WALK"}</span>
           <span className={state.adGame.greatSwordPurchased ? "equipped" : ""}>{state.adGame.greatSwordPurchased ? "굉장한 검" : "낡은 검"}</span>
         </div>
         <button className="game-pause-overlay" onClick={() => setPaused((value) => !value)}>{paused ? "계속" : "일시정지"}</button>
@@ -244,7 +251,7 @@ export function AdventureCanvas() {
           <p>{status}</p>
         </div>
       </div>
-      <div className="game-controls"><span><kbd>WASD</kbd><kbd>방향키</kbd> 4방향 이동</span><span><kbd>Space</kbd> 검 공격</span><span><kbd>E</kbd> 대화/조사</span><span><kbd>P</kbd> 일시정지</span></div>
+      <div className="game-controls"><span><kbd>WASD</kbd><kbd>방향키</kbd> 4방향 이동</span><span><kbd>Shift</kbd> 달리기 토글</span><span><kbd>Space</kbd> 검 공격</span><span><kbd>E</kbd> 대화/조사</span><span><kbd>P</kbd> 일시정지</span></div>
     </section>
   );
 }

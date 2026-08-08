@@ -92,7 +92,7 @@ function moveActor(actor: Actor, dx: number, dy: number, obstacles: Rect[], widt
   if (canOccupy(actor, actor.x, nextY, obstacles, width, height)) actor.y = nextY;
 }
 
-export function movePlayer(runtime: AdventureRuntime, keys: Set<string>, delta: number, obstacles = scenes[runtime.scene].obstacles): void {
+export function movePlayer(runtime: AdventureRuntime, keys: Set<string>, delta: number, obstacles = scenes[runtime.scene].obstacles, speedMultiplier = 1): void {
   let horizontal = Number(keys.has("arrowright") || keys.has("d")) - Number(keys.has("arrowleft") || keys.has("a"));
   let vertical = Number(keys.has("arrowdown") || keys.has("s")) - Number(keys.has("arrowup") || keys.has("w"));
   if (horizontal !== 0 && vertical !== 0) {
@@ -105,9 +105,10 @@ export function movePlayer(runtime: AdventureRuntime, keys: Set<string>, delta: 
   else if (horizontal > 0) runtime.player.direction = "right";
   else if (vertical < 0) runtime.player.direction = "up";
   else runtime.player.direction = "down";
-  runtime.player.walkTime += delta;
+  runtime.player.walkTime += delta * speedMultiplier;
   const scene = scenes[runtime.scene];
-  moveActor(runtime.player, horizontal * 155 * delta, vertical * 155 * delta, obstacles, scene.width, scene.height);
+  const speed = 155 * speedMultiplier;
+  moveActor(runtime.player, horizontal * speed * delta, vertical * speed * delta, obstacles, scene.width, scene.height);
 }
 
 function fireAtPlayer(runtime: AdventureRuntime, source: Vec2, speed: number, spread = 0): void {
