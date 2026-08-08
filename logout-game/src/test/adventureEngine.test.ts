@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRuntime, movePlayer, performAttack, updateEnemies } from "../minigame/engine";
+import { createRuntime, movePlayer, performAttack, RUN_SPEED_MULTIPLIER, updateEnemies } from "../minigame/engine";
 
 describe("G의 전설 엔진", () => {
   it("allows only one movement axis when diagonal keys are held", () => {
@@ -14,8 +14,8 @@ describe("G의 전설 엔진", () => {
     const walking = createRuntime("world", 6, 6, { x: 900, y: 600 });
     const running = createRuntime("world", 6, 6, { x: 900, y: 600 });
     movePlayer(walking, new Set(["d"]), 0.1, [], 1);
-    movePlayer(running, new Set(["d"]), 0.1, [], 1.55);
-    expect(running.player.x - 900).toBeCloseTo((walking.player.x - 900) * 1.55);
+    movePlayer(running, new Set(["d"]), 0.1, [], RUN_SPEED_MULTIPLIER);
+    expect(running.player.x - 900).toBeCloseTo((walking.player.x - 900) * RUN_SPEED_MULTIPLIER);
     expect(running.player.y).toBe(600);
   });
 

@@ -13,6 +13,7 @@ import {
   distance,
   movePlayer,
   performAttack,
+  RUN_SPEED_MULTIPLIER,
   tickRuntime,
   updateEnemies,
   updateProjectiles,
@@ -190,7 +191,7 @@ export function AdventureCanvas() {
       lastTimeRef.current = time;
       if (!paused && runtime.scene !== "clear") {
         tickRuntime(runtime, delta);
-        movePlayer(runtime, keysRef.current, delta, scenes[runtime.scene].obstacles, runningRef.current ? 1.55 : 1);
+        movePlayer(runtime, keysRef.current, delta, scenes[runtime.scene].obstacles, runningRef.current ? RUN_SPEED_MULTIPLIER : 1);
         if (["dungeon", "castle-1", "castle-2", "boss"].includes(runtime.scene)) {
           updateEnemies(runtime, delta);
           updateProjectiles(runtime, delta);
@@ -290,6 +291,7 @@ function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paus
     context.strokeStyle = "rgba(230,210,255,.7)"; context.stroke();
   });
   runtime.enemies.forEach((currentEnemy) => drawEnemy(context, currentEnemy));
+  drawAttackEffect(context, runtime, hasGreatSword);
   drawHero(context, runtime, sprites.hero, hasGreatSword);
   context.restore();
   const gradient = context.createRadialGradient(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 190, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 470);
@@ -395,12 +397,17 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
 function drawHero(context: CanvasRenderingContext2D, runtime: AdventureRuntime, sprite: HTMLImageElement | null, hasGreatSword: boolean) {
   if (runtime.elapsed < runtime.invulnerableUntil && Math.floor(runtime.elapsed * 14) % 2 === 0) return;
   const player = runtime.player;
-  context.fillStyle = "rgba(0,0,0,.25)"; context.beginPath(); context.ellipse(player.x, player.y + 18, 19, 7, 0, 0, Math.PI * 2); context.fill();
+  const walkPhase = Math.floor(player.walkTime * 10) % 4;
+  const stepping = player.moving && (walkPhase === 1 || walkPhase === 3);
+  const bob = stepping && runtime.attackTimer <= 0 ? -2 : 0;
+  if (player.moving) drawFootstepDust(context, runtime, walkPhase);
+  context.fillStyle = "rgba(0,0,0,.25)"; context.beginPath(); context.ellipse(player.x, player.y + 18, stepping ? 17 : 19, stepping ? 6 : 7, 0, 0, Math.PI * 2); context.fill();
   if (sprite?.complete) {
     const row = { down: 0, left: 1, right: 2, up: 3 }[player.direction];
-    const column = runtime.attackTimer > 0 ? 3 : player.moving ? (Math.floor(player.walkTime * 8) % 2 === 0 ? 1 : 2) : 0;
+    const walkColumns = [0, 1, 0, 2];
+    const column = runtime.attackTimer > 0 ? 3 : player.moving ? walkColumns[walkPhase] : 0;
     const drawSize = runtime.attackTimer > 0 ? 90 : 78;
-    context.drawImage(sprite, column * 256, row * 256, 256, 256, player.x - drawSize / 2, player.y - drawSize * 0.75, drawSize, drawSize);
+    context.drawImage(sprite, column * 256, row * 256, 256, 256, player.x - drawSize / 2, player.y - drawSize * 0.75 + bob, drawSize, drawSize);
   } else {
     context.fillStyle = "#233c61"; context.beginPath(); context.arc(player.x, player.y, 17, 0, Math.PI * 2); context.fill();
     context.fillStyle = "#d56b35"; context.fillRect(player.x - 17, player.y + 2, 34, 7);
@@ -408,6 +415,49 @@ function drawHero(context: CanvasRenderingContext2D, runtime: AdventureRuntime, 
   if (hasGreatSword) {
     context.fillStyle = "#ffd574"; context.beginPath(); context.arc(player.x + 17, player.y - 19, 4, 0, Math.PI * 2); context.fill();
   }
+}
+
+function drawFootstepDust(context: CanvasRenderingContext2D, runtime: AdventureRuntime, walkPhase: number) {
+  if (walkPhase !== 1 && walkPhase !== 3) return;
+  const player = runtime.player;
+  const backward = { down: { x: 0, y: -1 }, left: { x: 1, y: 0 }, right: { x: -1, y: 0 }, up: { x: 0, y: 1 } }[player.direction];
+  const side = walkPhase === 1 ? -1 : 1;
+  context.fillStyle = "rgba(222,205,157,.42)";
+  context.fillRect(Math.round(player.x + backward.x * 13 + backward.y * side * 5), Math.round(player.y + 18 + backward.y * 7 + backward.x * side * 5), 4, 3);
+  context.fillStyle = "rgba(222,205,157,.24)";
+  context.fillRect(Math.round(player.x + backward.x * 19 - backward.y * side * 4), Math.round(player.y + 20 + backward.y * 10 - backward.x * side * 4), 3, 2);
+}
+
+function drawAttackEffect(context: CanvasRenderingContext2D, runtime: AdventureRuntime, hasGreatSword: boolean) {
+  if (runtime.attackTimer <= 0) return;
+  const player = runtime.player;
+  const angle = { down: Math.PI / 2, left: Math.PI, right: 0, up: -Math.PI / 2 }[player.direction];
+  const progress = 1 - runtime.attackTimer / 0.24;
+  const opacity = Math.max(0, 1 - progress * 0.82);
+  const range = 77;
+
+  context.save();
+  context.fillStyle = hasGreatSword ? `rgba(255,205,94,${0.2 * opacity})` : `rgba(188,226,255,${0.17 * opacity})`;
+  context.beginPath();
+  context.moveTo(player.x, player.y);
+  context.arc(player.x, player.y, range, angle - 0.7, angle + 0.7);
+  context.closePath();
+  context.fill();
+
+  const sweepStart = angle - 0.72 + progress * 0.42;
+  const sweepEnd = angle - 0.2 + progress * 0.88;
+  context.strokeStyle = hasGreatSword ? `rgba(255,225,132,${0.9 * opacity})` : `rgba(220,242,255,${0.82 * opacity})`;
+  context.lineWidth = hasGreatSword ? 10 : 8;
+  context.lineCap = "round";
+  context.beginPath();
+  context.arc(player.x, player.y, 63, sweepStart, sweepEnd);
+  context.stroke();
+  context.strokeStyle = hasGreatSword ? `rgba(255,164,55,${0.65 * opacity})` : `rgba(105,186,240,${0.58 * opacity})`;
+  context.lineWidth = 3;
+  context.beginPath();
+  context.arc(player.x, player.y, range, angle - 0.7, angle + 0.7);
+  context.stroke();
+  context.restore();
 }
 
 function drawEnemy(context: CanvasRenderingContext2D, currentEnemy: EnemyActor) {

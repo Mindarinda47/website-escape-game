@@ -3,6 +3,8 @@ import type { Actor, AdventureRuntime, Direction, EnemyActor, EnemyKind, Rect, V
 
 export const CANVAS_WIDTH = 768;
 export const CANVAS_HEIGHT = 480;
+export const PLAYER_MOVE_SPEED = 180;
+export const RUN_SPEED_MULTIPLIER = 1.65;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -107,7 +109,7 @@ export function movePlayer(runtime: AdventureRuntime, keys: Set<string>, delta: 
   else runtime.player.direction = "down";
   runtime.player.walkTime += delta * speedMultiplier;
   const scene = scenes[runtime.scene];
-  const speed = 155 * speedMultiplier;
+  const speed = PLAYER_MOVE_SPEED * speedMultiplier;
   moveActor(runtime.player, horizontal * speed * delta, vertical * speed * delta, obstacles, scene.width, scene.height);
 }
 
