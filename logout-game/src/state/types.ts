@@ -7,7 +7,7 @@ export type LetterClueId =
   | "sports-o"
   | "game-g"
   | "game-u";
-export type ItemId = "water" | "banknote" | "key";
+export type ItemId = "water" | "key";
 export type ItemState = "missing" | "owned" | "used";
 export type ZoomPercent = 75 | 100 | 125 | 150;
 export type Checkpoint = "start" | "light-room" | "boss" | "rescue" | "clear";
@@ -21,8 +21,8 @@ export type GameState = {
   collectedLetters: Record<LetterClueId, boolean>;
   inventory: {
     water: ItemState;
-    banknote: ItemState;
     key: ItemState;
+    points: number;
     selectedItem: ItemId | null;
   };
   shop: {

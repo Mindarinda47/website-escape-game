@@ -19,7 +19,7 @@ describe("derived page completion", () => {
   it("requires each page's concrete progress flags", () => {
     const completed = {
       ...initialState,
-      inventory: { ...initialState.inventory, water: "used" as const, banknote: "used" as const, key: "used" as const },
+      inventory: { ...initialState.inventory, water: "used" as const, key: "used" as const, points: 0 },
       collectedLetters: Object.fromEntries(Object.keys(initialState.collectedLetters).map((clue) => [clue, true])) as typeof initialState.collectedLetters,
       news: { fireExtinguished: true },
       sports: { ...initialState.sports, simulationCompleted: true, predictionWasCorrect: true, rewardGranted: true },

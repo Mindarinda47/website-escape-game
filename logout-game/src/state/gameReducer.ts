@@ -36,10 +36,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.inventory.water !== "missing") return state;
       return { ...state, inventory: { ...state.inventory, water: "owned" }, shop: { ...state.shop, waterCollected: true } };
     case "BUY_KEY":
-      if (state.inventory.banknote !== "owned" || state.inventory.key !== "missing") return state;
+      if (state.inventory.points < 50000 || state.inventory.key !== "missing") return state;
       return {
         ...state,
-        inventory: { ...state.inventory, banknote: "used", key: "owned", selectedItem: null },
+        inventory: { ...state.inventory, points: state.inventory.points - 50000, key: "owned", selectedItem: null },
       };
     case "OPEN_CARD_DETAIL":
       return { ...state, shop: { ...state.shop, cardDetailOpened: true } };
@@ -68,7 +68,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...state,
           inventory: {
             ...state.inventory,
-            banknote: predictionWasCorrect && state.inventory.banknote === "missing" ? "owned" : state.inventory.banknote,
+            points: predictionWasCorrect && !state.sports.rewardGranted ? state.inventory.points + 50000 : state.inventory.points,
           },
           sports: {
             ...state.sports,

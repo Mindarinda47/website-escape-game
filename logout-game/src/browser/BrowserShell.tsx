@@ -58,7 +58,7 @@ export function BrowserShell({ onEndingAnswer, onReset }: Props) {
         </div>
         <InventoryDrawer />
       </div>
-      {state.inventory.selectedItem && <div className="selected-item-cursor" style={{ left: pointer.x + 14, top: pointer.y + 14 }} aria-hidden="true">{state.inventory.selectedItem === "water" ? "◒" : state.inventory.selectedItem === "banknote" ? "₩" : "⚿"}</div>}
+      {state.inventory.selectedItem && <div className="selected-item-cursor" style={{ left: pointer.x + 14, top: pointer.y + 14 }} aria-hidden="true">{state.inventory.selectedItem === "water" ? "◒" : "⚿"}</div>}
       {resetOpen && <div className="modal-backdrop"><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="reset-title"><h2 id="reset-title">진행을 초기화할까요?</h2><p>방문 기록, 아이템, 문자 단서와 페이지 진행이 모두 처음 상태로 돌아갑니다.</p><div className="modal-actions"><button className="button danger" onClick={() => { dispatch({ type: "RESET_GAME" }); setResetOpen(false); onReset(); }}>초기화</button><button className="button ghost" onClick={() => setResetOpen(false)}>취소</button></div></section></div>}
     </div>
   );

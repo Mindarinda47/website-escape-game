@@ -3,6 +3,7 @@ import { useGameState } from "../state/GameStateContext";
 import { letterValues, selectCollectedLetters } from "../state/selectors";
 import type { ItemId } from "../state/types";
 import waterItemIcon from "../image/products/생수아이콘.png";
+import keyItemIcon from "../image/열쇠아이템아이콘.png";
 
 export function InventoryDrawer() {
   const { state, dispatch } = useGameState();
@@ -37,14 +38,10 @@ export function InventoryDrawer() {
                 <span className="item-icon water-icon"><img src={waterItemIcon} alt="" /></span><b>생수</b><small>{state.inventory.water === "used" ? "사용됨" : "보관 중"}</small>
               </button>
             )}
-            {state.inventory.banknote === "missing" ? <div className="empty-item-slot" aria-label="빈 아이템 슬롯" /> : (
-              <button className={state.inventory.selectedItem === "banknote" ? "selected" : ""} disabled={state.inventory.banknote === "used"} onClick={() => select("banknote")}>
-                <span className="item-icon banknote-icon">₩</span><b>5만원권</b><small>{state.inventory.banknote === "used" ? "사용됨" : "보관 중"}</small>
-              </button>
-            )}
+            <div className="point-balance"><span className="item-icon point-icon">P</span><b>보유 포인트</b><small>{state.inventory.points.toLocaleString("ko-KR")}P</small></div>
             {state.inventory.key === "missing" ? <div className="empty-item-slot" aria-label="빈 아이템 슬롯" /> : (
               <button className={state.inventory.selectedItem === "key" ? "selected" : ""} disabled={state.inventory.key === "used"} onClick={() => select("key")}>
-                <span className="item-icon key-icon">⚿</span><b>고대 열쇠</b><small>{state.inventory.key === "used" ? "사용됨" : "보관 중"}</small>
+                <span className="item-icon key-icon"><img src={keyItemIcon} alt="" /></span><b>고대 열쇠</b><small>{state.inventory.key === "used" ? "사용됨" : "보관 중"}</small>
               </button>
             )}
           </div>

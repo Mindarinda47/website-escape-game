@@ -12,6 +12,7 @@ import booksAndSentencesImage from "../image/책과문장.png";
 import morningRoomImage from "../image/아침빛이오래머무는방.png";
 import gangrimFcImage from "../image/강림FC.png";
 import dorimFcImage from "../image/도림FC.png";
+import alleyBusinessNewsImage from "../image/골목상권뉴스썸네일.png";
 
 type Props = { onEndingAnswer: () => void };
 
@@ -19,7 +20,7 @@ const newsBriefs = [
   { category: "사회", title: "취업 준비 길어지는 대한민국 청년들… 첫 경력의 문턱도 높아졌다", time: "18분 전", image: youthEmploymentImage },
   { category: "문화", title: "밤의 도서관에서 시작된 조용한 전시", time: "32분 전", image: libraryExhibitionImage },
   { category: "생활", title: "창가에 두기 좋은 작은 식물 다섯 가지", time: "1시간 전", image: windowPlantsImage },
-  { category: "경제", title: "치솟는 임대료에 골목 상점 폐업 늘어… 빈 점포 확산", time: "2시간 전" },
+  { category: "경제", title: "치솟는 임대료에 골목 상점 폐업 늘어… 빈 점포 확산", time: "2시간 전", image: alleyBusinessNewsImage },
 ];
 
 const trending = ["유감산 산불", "산불", "코스피", "칠성전자", "항공권", "날씨", "폭염", "화재", "워터파크", "게임"];

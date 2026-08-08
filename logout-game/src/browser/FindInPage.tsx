@@ -5,7 +5,7 @@ import type { PageId } from "../state/types";
 const pageIndex: Record<PageId, string[]> = {
   portal: ["오늘", "뉴스", "쇼핑", "스포츠", "게임", "추천"],
   news: ["오늘", "산림", "불길", "새벽", "관련 기사", "기록"],
-  shop: ["마지막", "마지막", "last", "생수", "카드", "무료 샘플", "재고"],
+  shop: ["라스트", "생수", "카드", "무료 샘플", "재고"],
   sports: ["오늘", "예측", "홈", "무승부", "원정", "경기"],
   "ad-game": ["key", "adventure", "조작법", "빛", "열쇠", "구출"],
 };
@@ -20,21 +20,20 @@ export function FindInPage({ page, onClose }: Props) {
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return [];
-    if (page === "shop" && normalized === "last") return ["last", "last"];
+    if (page === "shop" && normalized === "라스트") return ["라스트"];
     return pageIndex[page].filter((entry) => entry.toLowerCase().includes(normalized));
   }, [page, query]);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
   useEffect(() => setIndex(0), [query, page]);
+  useEffect(() => {
+    if (page === "shop" && query === "라스트") dispatch({ type: "REVEAL_HIDDEN_STOCK" });
+  }, [dispatch, page, query]);
 
   function move(delta: number) {
     if (!matches.length) return;
     const next = (index + delta + matches.length) % matches.length;
     setIndex(next);
-    const term = query.trim().toLowerCase();
-    if (page === "shop" && (term === "마지막" || term === "last") && next === 1) {
-      dispatch({ type: "REVEAL_HIDDEN_STOCK" });
-    }
   }
 
   return (

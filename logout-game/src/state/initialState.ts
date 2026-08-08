@@ -14,7 +14,7 @@ export const initialState: GameState = {
     "game-g": false,
     "game-u": false,
   },
-  inventory: { water: "missing", banknote: "missing", key: "missing", selectedItem: null },
+  inventory: { water: "missing", key: "missing", points: 0, selectedItem: null },
   shop: { waterCollected: false, cardDetailOpened: false, hiddenStockRevealed: false },
   news: { fireExtinguished: false },
   sports: {

@@ -42,7 +42,7 @@ describe("game reducer", () => {
     expect(state.inventory.water).toBe("used");
   });
 
-  it("only grants the banknote for a correct retry and uses it to buy the game key", () => {
+  it("only grants points for a correct retry and spends them on the game key", () => {
     const failedState = reduce([
       { type: "START_MATCH", prediction: "away" },
       { type: "FINISH_MATCH" },
@@ -50,13 +50,17 @@ describe("game reducer", () => {
     expect(failedState.sports.predictionWasCorrect).toBe(false);
     expect(failedState.sports.rewardGranted).toBe(false);
     expect(failedState.sports.attempts).toBe(1);
-    expect(failedState.inventory.banknote).toBe("missing");
+    expect(failedState.inventory.points).toBe(0);
 
-    const state = reduce([
+    const rewardedState = reduce([
       { type: "RETRY_MATCH" },
       { type: "START_MATCH", prediction: "home" },
       { type: "FINISH_MATCH" },
       { type: "COLLECT_LETTER", clue: "sports-o" },
+    ], failedState);
+    expect(rewardedState.inventory.points).toBe(50000);
+
+    const state = reduce([
       { type: "BUY_KEY" },
       { type: "SELECT_ITEM", item: "key" },
       { type: "USE_KEY" },
@@ -64,11 +68,11 @@ describe("game reducer", () => {
       { type: "DEFEAT_BOSS" },
       { type: "COLLECT_LETTER", clue: "game-g" },
       { type: "RESCUE_PRINCESS" },
-    ], failedState);
+    ], rewardedState);
     expect(state.sports.predictionWasCorrect).toBe(true);
     expect(state.sports.rewardGranted).toBe(true);
     expect(state.sports.attempts).toBe(2);
-    expect(state.inventory.banknote).toBe("used");
+    expect(state.inventory.points).toBe(0);
     expect(state.inventory.key).toBe("used");
     expect(selectPageCompleted(state, "sports")).toBe(true);
     expect(selectPageCompleted(state, "ad-game")).toBe(true);
