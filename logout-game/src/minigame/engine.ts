@@ -10,6 +10,7 @@ export const BOSS_FIRE_AIM_LOCK_DURATION = 0.45;
 export const BOSS_FIRE_DURATION = 3;
 export const BOSS_FIRE_LENGTH = 520;
 export const BOSS_FIRE_WIDTH = 56;
+export const BOSS_DEFEAT_DURATION = 3.2;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -66,6 +67,9 @@ export function createRuntime(scene: AdventureRuntime["scene"], hp = 6, maxHp = 
     invulnerableUntil: 0,
     elapsed: 0,
     respawnTimer: 0,
+    bossDefeatTimer: 0,
+    bossDefeatPosition: null,
+    bossPassageOpen: false,
   };
 }
 
@@ -97,10 +101,37 @@ export function resolveSafeSpawn(scene: AdventureRuntime["scene"], spawn: Vec2, 
 }
 
 function moveActor(actor: Actor, dx: number, dy: number, obstacles: Rect[], width: number, height: number): void {
+  resolveActorOverlap(actor, obstacles, width, height);
   const nextX = actor.x + dx;
   const nextY = actor.y + dy;
   if (canOccupy(actor, nextX, actor.y, obstacles, width, height)) actor.x = nextX;
   if (canOccupy(actor, actor.x, nextY, obstacles, width, height)) actor.y = nextY;
+}
+
+function resolveActorOverlap(actor: Actor, obstacles: Rect[], width: number, height: number): void {
+  if (canOccupy(actor, actor.x, actor.y, obstacles, width, height)) return;
+  for (let range = 4; range <= 96; range += 4) {
+    for (let angleIndex = 0; angleIndex < 16; angleIndex += 1) {
+      const angle = angleIndex * Math.PI / 8;
+      const x = actor.x + Math.cos(angle) * range;
+      const y = actor.y + Math.sin(angle) * range;
+      if (canOccupy(actor, x, y, obstacles, width, height)) {
+        actor.x = x;
+        actor.y = y;
+        return;
+      }
+    }
+  }
+}
+
+function moveEnemyActor(actor: EnemyActor, dx: number, dy: number, obstacles: Rect[], width: number, height: number): void {
+  const startX = actor.x;
+  const startY = actor.y;
+  moveActor(actor, dx, dy, obstacles, width, height);
+  if (Math.hypot(actor.x - startX, actor.y - startY) > 0.1) return;
+  moveActor(actor, -dy * 0.9, dx * 0.9, obstacles, width, height);
+  if (Math.hypot(actor.x - startX, actor.y - startY) > 0.1) return;
+  moveActor(actor, dy * 0.9, -dx * 0.9, obstacles, width, height);
 }
 
 export function movePlayer(runtime: AdventureRuntime, keys: Set<string>, delta: number, obstacles = scenes[runtime.scene].obstacles, speedMultiplier = 1): void {
@@ -141,7 +172,7 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
     const speed = charging && gap < 220 ? 74 : 42;
     const moveX = charging ? towardX : -towardY * side;
     const moveY = charging ? towardY : towardX * side;
-    moveActor(enemyActor, moveX * speed * delta, moveY * speed * delta, obstacles, scene.width, scene.height);
+    moveEnemyActor(enemyActor, moveX * speed * delta, moveY * speed * delta, obstacles, scene.width, scene.height);
     return;
   }
 
@@ -149,7 +180,7 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
     const desired = gap < 125 ? -1 : gap > 205 ? 1 : 0;
     const moveX = desired === 0 ? -towardY * side : towardX * desired;
     const moveY = desired === 0 ? towardX * side : towardY * desired;
-    moveActor(enemyActor, moveX * 58 * delta, moveY * 58 * delta, obstacles, scene.width, scene.height);
+    moveEnemyActor(enemyActor, moveX * 58 * delta, moveY * 58 * delta, obstacles, scene.width, scene.height);
     if (enemyActor.cooldown <= 0 && gap < 310) {
       fireAtPlayer(runtime, enemyActor, 130, (Math.random() - 0.5) * 0.18);
       enemyActor.cooldown = 1.35 + Math.random() * 0.45;
@@ -186,9 +217,9 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
   }
 
   const cycle = enemyActor.patternTime % 7;
-  if (cycle < 2.4) moveActor(enemyActor, towardX * 82 * delta, towardY * 82 * delta, obstacles, scene.width, scene.height);
-  else if (cycle < 4.3) moveActor(enemyActor, -towardY * side * 62 * delta, towardX * side * 62 * delta, obstacles, scene.width, scene.height);
-  else moveActor(enemyActor, -towardX * 45 * delta, -towardY * 45 * delta, obstacles, scene.width, scene.height);
+  if (cycle < 2.4) moveEnemyActor(enemyActor, towardX * 82 * delta, towardY * 82 * delta, obstacles, scene.width, scene.height);
+  else if (cycle < 4.3) moveEnemyActor(enemyActor, -towardY * side * 62 * delta, towardX * side * 62 * delta, obstacles, scene.width, scene.height);
+  else moveEnemyActor(enemyActor, -towardX * 45 * delta, -towardY * 45 * delta, obstacles, scene.width, scene.height);
   if (enemyActor.cooldown <= 0) {
     if (cycle > 5.4) {
       for (let index = 0; index < 8; index += 1) {
@@ -234,13 +265,46 @@ export function performAttack(runtime: AdventureRuntime, damage: number): EnemyA
   for (const currentEnemy of runtime.enemies) {
     if (distance(strikeCenter, currentEnemy) <= currentEnemy.radius + 35) {
       currentEnemy.hp -= damage;
-      currentEnemy.x += direction.x * 15;
-      currentEnemy.y += direction.y * 15;
+      knockEnemyBack(runtime, currentEnemy, strikeCenter, direction);
       if (currentEnemy.hp <= 0) defeated.push(currentEnemy);
     }
   }
   runtime.enemies = runtime.enemies.filter((currentEnemy) => currentEnemy.hp > 0);
   return defeated;
+}
+
+function knockEnemyBack(runtime: AdventureRuntime, currentEnemy: EnemyActor, strikeCenter: Vec2, fallbackDirection: Vec2): void {
+  const gap = distance(strikeCenter, currentEnemy);
+  const direction = gap > 0.01
+    ? { x: (currentEnemy.x - strikeCenter.x) / gap, y: (currentEnemy.y - strikeCenter.y) / gap }
+    : fallbackDirection;
+  const minimumOutsideRange = currentEnemy.radius + 41 - gap;
+  const distanceToPush = currentEnemy.kind === "boss" ? 8 : Math.max(34, minimumOutsideRange);
+  const scene = scenes[runtime.scene];
+  const angle = Math.atan2(direction.y, direction.x);
+  const alternatives = [0, 0.42, -0.42, 0.82, -0.82, Math.PI / 2, -Math.PI / 2];
+  for (const offset of alternatives) {
+    const dx = Math.cos(angle + offset) * distanceToPush;
+    const dy = Math.sin(angle + offset) * distanceToPush;
+    if (tryKnockbackPath(currentEnemy, dx, dy, scene.obstacles, scene.width, scene.height)) return;
+  }
+}
+
+function tryKnockbackPath(actor: EnemyActor, dx: number, dy: number, obstacles: Rect[], width: number, height: number): boolean {
+  const start = { x: actor.x, y: actor.y };
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 4));
+  for (let step = 1; step <= steps; step += 1) {
+    const x = start.x + dx * step / steps;
+    const y = start.y + dy * step / steps;
+    if (!canOccupy(actor, x, y, obstacles, width, height)) {
+      actor.x = start.x;
+      actor.y = start.y;
+      return false;
+    }
+    actor.x = x;
+    actor.y = y;
+  }
+  return true;
 }
 
 export function damagePlayerIfHit(runtime: AdventureRuntime): boolean {

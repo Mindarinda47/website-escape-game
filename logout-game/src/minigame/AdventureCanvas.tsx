@@ -10,6 +10,7 @@ import { useGameState } from "../state/GameStateContext";
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
+  BOSS_DEFEAT_DURATION,
   BOSS_FIRE_CHARGE_DURATION,
   BOSS_FIRE_LENGTH,
   BOSS_FIRE_WIDTH,
@@ -84,7 +85,12 @@ export function AdventureCanvas() {
 
   useEffect(() => {
     const progress = stateRef.current.adGame;
-    runtimeRef.current = createRuntime(state.adGame.checkpoint, progress.hp, progress.maxHp, pendingSpawnRef.current ?? scenes[state.adGame.checkpoint].spawn);
+    const nextRuntime = createRuntime(state.adGame.checkpoint, progress.hp, progress.maxHp, pendingSpawnRef.current ?? scenes[state.adGame.checkpoint].spawn);
+    if (state.adGame.checkpoint === "boss" && progress.bossDefeated) {
+      nextRuntime.enemies = [];
+      nextRuntime.bossPassageOpen = true;
+    }
+    runtimeRef.current = nextRuntime;
     pendingSpawnRef.current = null;
     transitionLockedRef.current = false;
     princessDialogueRef.current = 0;
@@ -145,15 +151,20 @@ export function AdventureCanvas() {
     }
 
     function processExits(runtime: AdventureRuntime) {
-      const exit = scenes[runtime.scene].exits.find((candidate) => pointInRect(runtime.player, candidate.rect, runtime.player.radius));
+      const exit = scenes[runtime.scene].exits.find((candidate) =>
+        (!candidate.requiresBossDefeated || runtime.bossPassageOpen)
+        && pointInRect(runtime.player, candidate.rect, runtime.player.radius));
       if (exit) transition(exit);
     }
 
     function rewardEnemy(defeated: EnemyActor) {
       if (defeated.kind === "boss") {
-        transitionLockedRef.current = true;
-        dispatch({ type: "DEFEAT_BOSS" });
-        notifyRef.current("성주 모르가스를 쓰러뜨렸습니다.");
+        const runtime = runtimeRef.current;
+        runtime.bossDefeatTimer = BOSS_DEFEAT_DURATION;
+        runtime.bossDefeatPosition = { x: defeated.x, y: defeated.y };
+        runtime.projectiles = [];
+        runtime.player.moving = false;
+        setStatus("성주 모르가스의 마력이 붕괴하기 시작한다.");
         return;
       }
       const exp = defeated.kind === "ranged" ? 16 : 12;
@@ -173,7 +184,7 @@ export function AdventureCanvas() {
           if (progress.greatSwordPurchased) setStatus("대장장이: 그 검이라면 성의 갑옷도 벨 수 있을 걸세.");
           else if (progress.gold >= 45) {
             dispatch({ type: "BUY_GREAT_SWORD" });
-            setStatus("굉장한 검을 손에 넣었다. 검격 한 번의 위력이 두 배가 되었다.");
+            setStatus("굉장한 검을 얻었다!");
           } else setStatus(`대장장이: 굉장한 검은 45G라네. 자네 주머니엔 ${progress.gold}G가 있군.`);
           return;
         }
@@ -217,39 +228,57 @@ export function AdventureCanvas() {
       lastTimeRef.current = time;
       if (!paused && runtime.scene !== "clear") {
         tickRuntime(runtime, delta);
-        movePlayer(runtime, keysRef.current, delta, scenes[runtime.scene].obstacles, runningRef.current ? RUN_SPEED_MULTIPLIER : 1);
-        if (["dungeon", "castle-1", "castle-2", "boss"].includes(runtime.scene)) {
-          updateEnemies(runtime, delta);
-          updateProjectiles(runtime, delta);
-        }
-
         const attackDown = keysRef.current.has("space");
-        if (attackDown && !attackHeldRef.current) attack(runtime);
+        const attackPressed = attackDown && !attackHeldRef.current;
         attackHeldRef.current = attackDown;
         const interactDown = keysRef.current.has("e");
-        if (interactDown && !interactHeldRef.current) interact(runtime);
+        const interactPressed = interactDown && !interactHeldRef.current;
         interactHeldRef.current = interactDown;
 
-        if (damagePlayerIfHit(runtime)) {
-          dispatch({ type: "SET_ADVENTURE_HP", hp: runtime.player.hp });
-          setStatus(runtime.player.hp > 0 ? "공격을 받았다. 잠시 몸이 빛나는 동안에는 피해를 받지 않는다." : "눈앞이 흐려지며 마을 우물가로 돌아간다.");
-          if (runtime.player.hp <= 0 && !transitionLockedRef.current) {
-            transitionLockedRef.current = true;
-            pendingSpawnRef.current = { x: 520, y: 570 };
-            dispatch({ type: "REST_ADVENTURE" });
-            dispatch({ type: "SET_CHECKPOINT", checkpoint: "village" });
+        if (runtime.bossDefeatTimer > 0) {
+          runtime.player.moving = false;
+          runtime.projectiles = [];
+          runtime.bossDefeatTimer = Math.max(0, runtime.bossDefeatTimer - delta);
+          if (runtime.bossDefeatTimer === 0 && !runtime.bossPassageOpen) {
+            runtime.bossPassageOpen = true;
+            dispatch({ type: "DEFEAT_BOSS" });
+            setStatus("폭발이 잦아들고 왕좌 뒤편의 숨겨진 통로가 열렸다.");
+            notifyRef.current("왕좌 뒤편에서 숨겨진 통로가 열렸습니다.");
           }
-        }
+        } else {
+          const rescueDialogueActive = runtime.scene === "rescue" && princessDialogueRef.current > 0;
+          if (rescueDialogueActive) runtime.player.moving = false;
+          else movePlayer(runtime, keysRef.current, delta, scenes[runtime.scene].obstacles, runningRef.current ? RUN_SPEED_MULTIPLIER : 1);
 
-        if (runtime.scene === "dungeon" && runtime.enemies.length === 0) {
-          runtime.respawnTimer += delta;
-          if (runtime.respawnTimer >= 3.2) {
-            runtime.enemies = createEnemies("dungeon");
-            runtime.respawnTimer = 0;
-            setStatus("동굴 깊은 곳에서 새로운 마물의 기척이 들린다.");
+          if (["dungeon", "castle-1", "castle-2", "boss"].includes(runtime.scene)) {
+            updateEnemies(runtime, delta);
+            updateProjectiles(runtime, delta);
           }
+
+          if (!rescueDialogueActive && attackPressed) attack(runtime);
+          if (interactPressed) interact(runtime);
+
+          if (!rescueDialogueActive && damagePlayerIfHit(runtime)) {
+            dispatch({ type: "SET_ADVENTURE_HP", hp: runtime.player.hp });
+            setStatus(runtime.player.hp > 0 ? "공격을 받았다. 잠시 몸이 빛나는 동안에는 피해를 받지 않는다." : "눈앞이 흐려지며 마을 우물가로 돌아간다.");
+            if (runtime.player.hp <= 0 && !transitionLockedRef.current) {
+              transitionLockedRef.current = true;
+              pendingSpawnRef.current = { x: 520, y: 570 };
+              dispatch({ type: "REST_ADVENTURE" });
+              dispatch({ type: "SET_CHECKPOINT", checkpoint: "village" });
+            }
+          }
+
+          if (runtime.scene === "dungeon" && runtime.enemies.length === 0) {
+            runtime.respawnTimer += delta;
+            if (runtime.respawnTimer >= 3.2) {
+              runtime.enemies = createEnemies("dungeon");
+              runtime.respawnTimer = 0;
+              setStatus("동굴 깊은 곳에서 새로운 마물의 기척이 들린다.");
+            }
+          }
+          if (!rescueDialogueActive) processExits(runtime);
         }
-        processExits(runtime);
       }
       draw(canvasContext, runtimeRef.current, paused, spritesRef.current, stateRef.current.adGame.greatSwordPurchased, stateRef.current.collectedLetters["game-u"]);
       frame = requestAnimationFrame(update);
@@ -313,6 +342,7 @@ function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paus
   drawGround(context, runtime.scene);
   drawMapObjects(context, runtime, sprites, hasU);
   drawBossSkill(context, runtime);
+  drawBossDefeatEffect(context, runtime);
   runtime.projectiles.forEach((projectile) => {
     context.fillStyle = "#b884ff";
     context.beginPath(); context.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2); context.fill();
@@ -320,7 +350,7 @@ function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paus
   });
   runtime.enemies.forEach((currentEnemy) => drawEnemy(context, currentEnemy, sprites));
   drawAttackEffect(context, runtime, hasGreatSword);
-  drawHero(context, runtime, sprites.hero, hasGreatSword);
+  drawHero(context, runtime, sprites.hero);
   context.restore();
   const gradient = context.createRadialGradient(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 190, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 470);
   gradient.addColorStop(0, "rgba(0,0,0,0)"); gradient.addColorStop(1, "rgba(3,5,12,.42)");
@@ -412,8 +442,14 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
     if (sprites.harp?.complete) context.drawImage(sprites.harp, SECRET_ALTAR.x - 58, SECRET_ALTAR.y - 73, 116, 116);
   }
   if (runtime.scene === "boss") {
-    context.fillStyle = "#1c1721"; context.fillRect(555, 82, 190, 72);
-    context.fillStyle = "#9b779c"; context.font = "bold 17px monospace"; context.textAlign = "center"; context.fillText("MORGAS", 650, 124); context.textAlign = "start";
+    if (runtime.bossPassageOpen) {
+      drawHiddenPassage(context);
+      scene.exits.filter((exit) => exit.requiresBossDefeated).forEach((exit) => drawExit(context, exit));
+    }
+    else {
+      context.fillStyle = "#1c1721"; context.fillRect(555, 82, 190, 72);
+      context.fillStyle = "#9b779c"; context.font = "bold 17px monospace"; context.textAlign = "center"; context.fillText("MORGAS", 650, 124); context.textAlign = "start";
+    }
   }
   if (runtime.scene === "rescue") {
     context.fillStyle = "rgba(255,225,158,.13)"; context.beginPath(); context.arc(PRINCESS.x, PRINCESS.y, 95, 0, Math.PI * 2); context.fill();
@@ -421,7 +457,63 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
   }
 }
 
-function drawHero(context: CanvasRenderingContext2D, runtime: AdventureRuntime, sprite: HTMLImageElement | null, hasGreatSword: boolean) {
+function drawHiddenPassage(context: CanvasRenderingContext2D) {
+  context.save();
+  context.fillStyle = "#090812";
+  context.fillRect(550, 0, 200, 118);
+  context.strokeStyle = "#6f587c";
+  context.lineWidth = 9;
+  context.beginPath();
+  context.moveTo(557, 116);
+  context.lineTo(557, 64);
+  context.arc(650, 64, 93, Math.PI, 0);
+  context.lineTo(743, 116);
+  context.stroke();
+  for (let step = 0; step < 4; step += 1) {
+    context.fillStyle = `rgba(125,100,145,${0.34 - step * 0.055})`;
+    context.fillRect(570 + step * 14, 91 - step * 13, 160 - step * 28, 12);
+  }
+  for (let spark = 0; spark < 9; spark += 1) {
+    const angle = spark * 1.91;
+    context.fillStyle = spark % 2 ? "rgba(255,221,138,.72)" : "rgba(177,137,218,.7)";
+    context.fillRect(646 + Math.cos(angle) * (38 + spark * 3), 59 + Math.sin(angle) * 28, 3, 3);
+  }
+  context.restore();
+}
+
+function drawBossDefeatEffect(context: CanvasRenderingContext2D, runtime: AdventureRuntime) {
+  if (!runtime.bossDefeatPosition || runtime.bossDefeatTimer <= 0) return;
+  const progress = 1 - runtime.bossDefeatTimer / BOSS_DEFEAT_DURATION;
+  const opacity = Math.max(0, 1 - progress);
+  const { x, y } = runtime.bossDefeatPosition;
+  context.save();
+  const glow = context.createRadialGradient(x, y, 5, x, y, 42 + progress * 95);
+  glow.addColorStop(0, `rgba(255,255,220,${Math.min(1, opacity * 1.5)})`);
+  glow.addColorStop(0.28, `rgba(255,151,48,${opacity * 0.88})`);
+  glow.addColorStop(0.65, `rgba(158,54,126,${opacity * 0.55})`);
+  glow.addColorStop(1, "rgba(52,16,63,0)");
+  context.fillStyle = glow;
+  context.beginPath();
+  context.arc(x, y, 42 + progress * 95, 0, Math.PI * 2);
+  context.fill();
+  context.lineWidth = 7 - progress * 3;
+  context.strokeStyle = `rgba(255,211,94,${opacity * 0.8})`;
+  context.beginPath();
+  context.arc(x, y, 28 + progress * 128, 0, Math.PI * 2);
+  context.stroke();
+  for (let particle = 0; particle < 18; particle += 1) {
+    const angle = particle * (Math.PI * 2 / 18) + (particle % 3) * 0.23;
+    const distanceFromBoss = 20 + progress * (72 + (particle % 5) * 15);
+    const size = Math.max(2, 10 - progress * 7 - (particle % 3));
+    context.fillStyle = particle % 3 === 0
+      ? `rgba(187,79,198,${opacity})`
+      : `rgba(255,${130 + (particle % 4) * 24},52,${opacity})`;
+    context.fillRect(x + Math.cos(angle) * distanceFromBoss - size / 2, y + Math.sin(angle) * distanceFromBoss - size / 2, size, size);
+  }
+  context.restore();
+}
+
+function drawHero(context: CanvasRenderingContext2D, runtime: AdventureRuntime, sprite: HTMLImageElement | null) {
   if (runtime.elapsed < runtime.invulnerableUntil && Math.floor(runtime.elapsed * 14) % 2 === 0) return;
   const player = runtime.player;
   const walkPhase = Math.floor(player.walkTime * 10) % 4;
@@ -438,9 +530,6 @@ function drawHero(context: CanvasRenderingContext2D, runtime: AdventureRuntime, 
   } else {
     context.fillStyle = "#233c61"; context.beginPath(); context.arc(player.x, player.y, 17, 0, Math.PI * 2); context.fill();
     context.fillStyle = "#d56b35"; context.fillRect(player.x - 17, player.y + 2, 34, 7);
-  }
-  if (hasGreatSword) {
-    context.fillStyle = "#ffd574"; context.beginPath(); context.arc(player.x + 17, player.y - 19, 4, 0, Math.PI * 2); context.fill();
   }
 }
 

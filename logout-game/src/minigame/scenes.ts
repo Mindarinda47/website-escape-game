@@ -142,7 +142,10 @@ export const scenes: Record<Checkpoint, SceneDefinition> = {
       { x: 1057, y: 190, width: 78, height: 140 }, { x: 165, y: 555, width: 78, height: 140 },
       { x: 1057, y: 555, width: 78, height: 140 },
     ],
-    exits: [{ rect: { x: 550, y: 810, width: 200, height: 90 }, to: "castle-2", spawn: { x: 750, y: 110 }, label: "2층 회랑" }],
+    exits: [
+      { rect: { x: 550, y: 810, width: 200, height: 90 }, to: "castle-2", spawn: { x: 750, y: 110 }, label: "2층 회랑" },
+      { rect: { x: 550, y: 0, width: 200, height: 72 }, to: "rescue", spawn: { x: 250, y: 470 }, label: "숨겨진 통로", hidden: true, requiresBossDefeated: true },
+    ],
   },
   secret: {
     title: "이름 없는 숲",

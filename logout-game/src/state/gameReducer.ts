@@ -134,7 +134,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.adGame.greatSwordPurchased || state.adGame.gold < 45) return state;
       return { ...state, adGame: { ...state.adGame, gold: state.adGame.gold - 45, greatSwordPurchased: true } };
     case "DEFEAT_BOSS":
-      return { ...state, adGame: { ...state.adGame, bossDefeated: true, checkpoint: "rescue" } };
+      return { ...state, adGame: { ...state.adGame, bossDefeated: true } };
     case "RESCUE_PRINCESS":
       return { ...state, adGame: { ...state.adGame, princessRescued: true, checkpoint: "clear" } };
     case "REPLAY_ADVENTURE":

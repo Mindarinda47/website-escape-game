@@ -27,10 +27,12 @@ describe("G의 전설 엔진", () => {
       basic.enemies = [basic.enemies[0]];
       Object.assign(basic.enemies[0], { x: 142, y: 100 });
       for (let hit = 0; hit < 2; hit += 1) {
+        Object.assign(basic.enemies[0], { x: 142, y: 100 });
         performAttack(basic, 1);
         basic.attackCooldown = 0;
       }
       expect(basic.enemies).toHaveLength(1);
+      Object.assign(basic.enemies[0], { x: 142, y: 100 });
       performAttack(basic, 1);
       expect(basic.enemies).toHaveLength(0);
 
@@ -40,11 +42,29 @@ describe("G의 전설 엔진", () => {
       Object.assign(great.enemies[0], { x: 142, y: 100 });
       performAttack(great, 2);
       great.attackCooldown = 0;
+      Object.assign(great.enemies[0], { x: 142, y: 100 });
       performAttack(great, 2);
       expect(great.enemies).toHaveLength(0);
     } finally {
       random.mockRestore();
     }
+  });
+
+  it("knocks normal enemies out of sword range but only nudges the boss", () => {
+    const normal = createRuntime("dungeon", 6, 6, { x: 100, y: 100 });
+    normal.player.direction = "right";
+    normal.enemies = [normal.enemies[0]];
+    Object.assign(normal.enemies[0], { x: 142, y: 100 });
+    performAttack(normal, 1);
+    expect(normal.enemies[0].x).toBeGreaterThan(176);
+
+    const bossRuntime = createRuntime("boss", 6, 6, { x: 600, y: 230 });
+    bossRuntime.player.direction = "right";
+    const boss = bossRuntime.enemies[0];
+    const startX = boss.x;
+    performAttack(bossRuntime, 1);
+    expect(boss.x - startX).toBeGreaterThan(0);
+    expect(boss.x - startX).toBeLessThanOrEqual(8.01);
   });
 
   it("gives ranged enemies a projectile attack pattern", () => {

@@ -31,6 +31,9 @@ export type AdventureRuntime = {
   invulnerableUntil: number;
   elapsed: number;
   respawnTimer: number;
+  bossDefeatTimer: number;
+  bossDefeatPosition: Vec2 | null;
+  bossPassageOpen: boolean;
 };
 
 export type SceneExit = {
@@ -41,6 +44,7 @@ export type SceneExit = {
   hidden?: boolean;
   requiresLevel?: number;
   requiresGreatSword?: boolean;
+  requiresBossDefeated?: boolean;
 };
 
 export type SceneDefinition = {
