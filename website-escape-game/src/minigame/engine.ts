@@ -267,13 +267,13 @@ function moveEnemy(enemyActor: EnemyActor, runtime: AdventureRuntime, delta: num
     if (cycle > 5.4) {
       for (let index = 0; index < 8; index += 1) {
         const angle = (Math.PI * 2 * index) / 8 + enemyActor.patternTime * 0.15;
-        runtime.projectiles.push({ x: enemyActor.x, y: enemyActor.y, vx: Math.cos(angle) * 112, vy: Math.sin(angle) * 112, radius: 8, life: 3.5, hostile: true });
+        runtime.projectiles.push({ x: enemyActor.x, y: enemyActor.y, vx: Math.cos(angle) * 145, vy: Math.sin(angle) * 145, radius: 8, life: 3.5, hostile: true });
       }
       enemyActor.cooldown = 1.7;
     } else {
-      fireAtPlayer(runtime, enemyActor, 155);
-      fireAtPlayer(runtime, enemyActor, 150, -0.16);
-      fireAtPlayer(runtime, enemyActor, 150, 0.16);
+      fireAtPlayer(runtime, enemyActor, 195);
+      fireAtPlayer(runtime, enemyActor, 188, -0.16);
+      fireAtPlayer(runtime, enemyActor, 188, 0.16);
       enemyActor.cooldown = 1.2;
     }
   }
