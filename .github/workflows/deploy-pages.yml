@@ -21,6 +21,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: website-escape-game
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -35,6 +38,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: website-escape-game/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -53,7 +57,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: dist
+          path: website-escape-game/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
