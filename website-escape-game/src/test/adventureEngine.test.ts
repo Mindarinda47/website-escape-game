@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { createRuntime, damagePlayerIfHit, movePlayer, performAttack, RUN_SPEED_MULTIPLIER, updateEnemies, updatePlayerKnockback } from "../minigame/engine";
 
 describe("G의 전설 엔진", () => {
+  it("arms the boss intro only when entering the boss room", () => {
+    expect(createRuntime("boss").bossIntroPhase).toBe("approach");
+    expect(createRuntime("village").bossIntroPhase).toBe("inactive");
+  });
+
   it("allows only one movement axis when diagonal keys are held", () => {
     const runtime = createRuntime("world", 6, 6, { x: 400, y: 240 });
     runtime.player.direction = "down";

@@ -12,7 +12,7 @@ import { useGameState } from "../state/GameStateContext";
 import type { HintId } from "../state/types";
 import { adventureText } from "../content/text";
 import { playSfx, setFootsteps, stopAdventureSfx, stopSfx, type FootstepSurface } from "../SE/sfx";
-import { stopBgm } from "../BGM/bgm";
+import { setBgm, stopBgm } from "../BGM/bgm";
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -42,6 +42,7 @@ import type { AdventureRuntime, DefeatEffect, EnemyActor, Rect, SceneExit, Vec2 
 
 const BLACKSMITH = { x: 905, y: 410 };
 const VILLAGE_WELL = { x: 520, y: 500 };
+const VILLAGE_SIGN = { x: 680, y: 580 };
 const SECRET_ALTAR = { x: 1060, y: 450 };
 const PRINCESS = { x: 700, y: 330 };
 const TREASURE_CHESTS: Array<{ scene: "dungeon" | "castle-2"; point: Vec2; hint: HintId }> = [
@@ -51,6 +52,7 @@ const TREASURE_CHESTS: Array<{ scene: "dungeon" | "castle-2"; point: Vec2; hint:
 const LEVEL_UP_EFFECT_DURATION = 1.8;
 const SCENE_FADE_OUT_DURATION = 0.32;
 const SCENE_FADE_IN_DURATION = 0.42;
+const BOSS_INTRO_TRIGGER_Y = 530;
 
 type SceneTransitionState = {
   phase: "idle" | "out" | "waiting" | "in";
@@ -84,6 +86,7 @@ export function AdventureCanvas() {
   const interactHeldRef = useRef(false);
   const transitionLockedRef = useRef(false);
   const princessDialogueRef = useRef(0);
+  const villageSignDialogueRef = useRef(0);
   const levelUpTimerRef = useRef(0);
   const previousLevelRef = useRef(state.adGame.level);
   const previousGreatSwordRef = useRef(state.adGame.greatSwordPurchased);
@@ -121,6 +124,7 @@ export function AdventureCanvas() {
     if (state.adGame.checkpoint === "boss" && progress.bossDefeated) {
       nextRuntime.enemies = [];
       nextRuntime.bossPassageOpen = true;
+      nextRuntime.bossIntroPhase = "battle";
     }
     runtimeRef.current = nextRuntime;
     pendingSpawnRef.current = null;
@@ -129,11 +133,11 @@ export function AdventureCanvas() {
       transitionLockedRef.current = true;
     } else transitionLockedRef.current = false;
     princessDialogueRef.current = 0;
-    setStatus(sceneCopy[state.adGame.checkpoint].objective);
+    villageSignDialogueRef.current = 0;
+    setStatus(state.adGame.checkpoint === "boss" && !progress.bossDefeated ? adventureText.battle.bossApproach : sceneCopy[state.adGame.checkpoint].objective);
     stopSfx("dragonBreathCharge");
     stopSfx("dragonFireBeam");
-    if (state.adGame.checkpoint === "boss" && !progress.bossDefeated) playSfx("dragonBossRoar");
-    else stopSfx("dragonBossRoar");
+    stopSfx("dragonBossRoar");
   }, [state.adGame.checkpoint]);
 
   useEffect(() => {
@@ -210,7 +214,10 @@ export function AdventureCanvas() {
     }
 
     function processExits(runtime: AdventureRuntime) {
+      if (runtime.scene === "boss" && !runtime.bossPassageOpen) return;
       const exit = scenes[runtime.scene].exits.find((candidate) =>
+        (runtime.scene !== "boss" || Boolean(candidate.requiresBossDefeated))
+        &&
         (!candidate.requiresBossDefeated || runtime.bossPassageOpen)
         && pointInRect(runtime.player, candidate.rect, runtime.player.radius));
       if (exit) transition(exit);
@@ -249,6 +256,20 @@ export function AdventureCanvas() {
     }
 
     function interact(runtime: AdventureRuntime) {
+      if (runtime.scene === "boss" && runtime.bossIntroPhase === "dialogue") {
+        const nextIndex = runtime.bossDialogueIndex + 1;
+        if (nextIndex < adventureText.bossIntro.lines.length) {
+          runtime.bossDialogueIndex = nextIndex;
+          setStatus(adventureText.bossIntro.lines[nextIndex]);
+        } else {
+          runtime.bossIntroPhase = "battle";
+          runtime.player.moving = false;
+          setStatus(sceneCopy.boss.objective);
+          setBgm("finalBattle");
+          playSfx("dragonBossRoar");
+        }
+        return;
+      }
       if (runtime.scene === "village") {
         if (distance(runtime.player, BLACKSMITH) < 78) {
           const progress = stateRef.current.adGame;
@@ -265,6 +286,17 @@ export function AdventureCanvas() {
           dispatch({ type: "REST_ADVENTURE" });
           playSfx("wellHeal");
           setStatus(adventureText.npc.well);
+          return;
+        }
+        if (distance(runtime.player, VILLAGE_SIGN) < 78) {
+          const nextLine = villageSignDialogueRef.current;
+          if (nextLine < adventureText.npc.villageSign.length) {
+            setStatus(adventureText.npc.villageSign[nextLine]);
+            villageSignDialogueRef.current += 1;
+          } else {
+            villageSignDialogueRef.current = 0;
+            setStatus(sceneCopy.village.objective);
+          }
           return;
         }
       }
@@ -350,14 +382,23 @@ export function AdventureCanvas() {
             }
           } else {
             const rescueDialogueActive = runtime.scene === "rescue" && princessDialogueRef.current > 0;
+            if (runtime.scene === "boss" && runtime.bossIntroPhase === "approach" && runtime.player.y <= BOSS_INTRO_TRIGGER_Y) {
+              runtime.bossIntroPhase = "dialogue";
+              runtime.bossDialogueIndex = 0;
+              runtime.player.moving = false;
+              setStatus(adventureText.bossIntro.lines[0]);
+            }
+            const bossDialogueActive = runtime.scene === "boss" && runtime.bossIntroPhase === "dialogue";
+            const bossCombatActive = runtime.scene !== "boss" || runtime.bossIntroPhase === "battle";
+            const signDialogueActive = runtime.scene === "village" && villageSignDialogueRef.current > 0;
             const obstacles = adventureObstacles(runtime.scene);
-            if (!rescueDialogueActive && attackPressed) attack(runtime);
+            if (!rescueDialogueActive && !bossDialogueActive && bossCombatActive && !signDialogueActive && attackPressed) attack(runtime);
             const attackLocked = runtime.attackTimer > 0;
             const knockbackLocked = updatePlayerKnockback(runtime, delta, obstacles);
-            if (rescueDialogueActive || attackLocked || knockbackLocked) runtime.player.moving = false;
+            if (rescueDialogueActive || bossDialogueActive || signDialogueActive || attackLocked || knockbackLocked) runtime.player.moving = false;
             else movePlayer(runtime, keysRef.current, delta, obstacles, RUN_SPEED_MULTIPLIER);
 
-            if (["dungeon", "castle-1", "castle-2", "boss"].includes(runtime.scene)) {
+            if (["dungeon", "castle-1", "castle-2", "boss"].includes(runtime.scene) && bossCombatActive) {
               const telegraphingBats = new Set(runtime.enemies.filter((enemy) => enemy.kind === "melee" && enemy.meleePhase === "telegraph").map((enemy) => enemy.id));
               const projectileCount = runtime.projectiles.length;
               const bossPhase = runtime.enemies.find((enemy) => enemy.kind === "boss")?.specialPhase;
@@ -382,7 +423,7 @@ export function AdventureCanvas() {
 
             if (interactPressed) interact(runtime);
 
-            if (!rescueDialogueActive && damagePlayerIfHit(runtime)) {
+            if (!rescueDialogueActive && !bossDialogueActive && bossCombatActive && damagePlayerIfHit(runtime)) {
               playSfx("heroHurt");
               dispatch({ type: "SET_ADVENTURE_HP", hp: runtime.player.hp });
               setStatus(runtime.player.hp > 0 ? adventureText.battle.damaged : adventureText.battle.defeated);
@@ -402,7 +443,7 @@ export function AdventureCanvas() {
                 setStatus(adventureText.battle.respawn);
               }
             }
-            if (!rescueDialogueActive) processExits(runtime);
+            if (!rescueDialogueActive && !bossDialogueActive && !signDialogueActive) processExits(runtime);
           }
         }
       }
@@ -411,6 +452,8 @@ export function AdventureCanvas() {
         && sceneTransitionRef.current.phase === "idle"
         && currentRuntime.bossDefeatTimer <= 0
         && currentRuntime.attackTimer <= 0
+        && currentRuntime.bossIntroPhase !== "dialogue"
+        && villageSignDialogueRef.current === 0
         && currentRuntime.player.moving
         ? footstepSurface(currentRuntime.scene)
         : null;
@@ -441,7 +484,7 @@ export function AdventureCanvas() {
         </div>
         {showSwordReward && <div className="great-sword-reward" aria-live="polite"><span /><img src={amazingSwordIcon} alt={adventureText.equipment.greatSword} /><strong>{adventureText.equipment.greatSwordObtained}</strong></div>}
         <div className="rpg-dialogue" aria-live="polite">
-          <span>{sceneCopy[state.adGame.checkpoint].title}</span>
+          <span>{runtimeRef.current.bossIntroPhase === "dialogue" ? adventureText.bossIntro.speaker : sceneCopy[state.adGame.checkpoint].title}</span>
           <p>{status}</p>
         </div>
       </div>
@@ -463,8 +506,10 @@ function treasureChestFor(scene: AdventureRuntime["scene"]) {
 
 function adventureObstacles(scene: AdventureRuntime["scene"]): Rect[] {
   const treasure = treasureChestFor(scene);
-  if (!treasure) return scenes[scene].obstacles;
-  return [...scenes[scene].obstacles, { x: treasure.point.x - 25, y: treasure.point.y - 18, width: 50, height: 34 }];
+  const additions: Rect[] = [];
+  if (scene === "village") additions.push({ x: VILLAGE_SIGN.x - 19, y: VILLAGE_SIGN.y - 28, width: 38, height: 40 });
+  if (treasure) additions.push({ x: treasure.point.x - 25, y: treasure.point.y - 18, width: 50, height: 34 });
+  return additions.length ? [...scenes[scene].obstacles, ...additions] : scenes[scene].obstacles;
 }
 
 function nudgeAwayFromExit(runtime: AdventureRuntime, exit: SceneExit) {
@@ -482,6 +527,15 @@ function pointInRect(point: Vec2, rect: Rect, margin = 0) {
 
 function cameraFor(runtime: AdventureRuntime): Vec2 {
   const scene = scenes[runtime.scene];
+  if (runtime.scene === "boss" && runtime.bossIntroPhase === "dialogue") {
+    const boss = runtime.enemies.find((enemy) => enemy.kind === "boss");
+    if (boss) {
+      return {
+        x: Math.round(clamp((runtime.player.x + boss.x) / 2 - CANVAS_WIDTH / 2, 0, Math.max(0, scene.width - CANVAS_WIDTH))),
+        y: Math.round(clamp((runtime.player.y + boss.y) / 2 - CANVAS_HEIGHT / 2, 0, Math.max(0, scene.height - CANVAS_HEIGHT))),
+      };
+    }
+  }
   return {
     x: Math.round(clamp(runtime.player.x - CANVAS_WIDTH / 2, 0, Math.max(0, scene.width - CANVAS_WIDTH))),
     y: Math.round(clamp(runtime.player.y - CANVAS_HEIGHT / 2, 0, Math.max(0, scene.height - CANVAS_HEIGHT))),
@@ -516,11 +570,19 @@ function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paus
   const gradient = context.createRadialGradient(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 190, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 470);
   gradient.addColorStop(0, "rgba(0,0,0,0)"); gradient.addColorStop(1, "rgba(3,5,12,.42)");
   context.fillStyle = gradient; context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  if (runtime.scene === "boss" && runtime.bossIntroPhase === "dialogue") drawCutsceneBars(context);
   drawSceneTransition(context, sceneTransition);
   if (paused) {
     context.fillStyle = "rgba(5,8,16,.72)"; context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     context.fillStyle = "white"; context.font = "bold 30px monospace"; context.textAlign = "center"; context.fillText("PAUSED", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2); context.textAlign = "start";
   }
+}
+
+function drawCutsceneBars(context: CanvasRenderingContext2D) {
+  const barHeight = 34;
+  context.fillStyle = "rgba(4,3,8,.9)";
+  context.fillRect(0, 0, CANVAS_WIDTH, barHeight);
+  context.fillRect(0, CANVAS_HEIGHT - barHeight, CANVAS_WIDTH, barHeight);
 }
 
 function drawSceneTransition(context: CanvasRenderingContext2D, transition: SceneTransitionState) {
@@ -604,6 +666,8 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
     if (distance(runtime.player, BLACKSMITH) < 92) drawInteractionPrompt(context, BLACKSMITH, adventureText.prompt.talk);
     drawWell(context, VILLAGE_WELL);
     if (distance(runtime.player, VILLAGE_WELL) < 84) drawInteractionPrompt(context, VILLAGE_WELL, adventureText.prompt.recover);
+    drawVillageSign(context, VILLAGE_SIGN);
+    if (distance(runtime.player, VILLAGE_SIGN) < 92) drawInteractionPrompt(context, VILLAGE_SIGN, adventureText.prompt.inspect);
     drawForge(context, { x: 980, y: 410 });
   }
   if (runtime.scene === "world") {
@@ -623,6 +687,8 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
     if (!opened && distance(runtime.player, treasure.point) < 88) drawInteractionPrompt(context, treasure.point, adventureText.prompt.open);
   }
   if (runtime.scene === "boss") {
+    const boss = runtime.enemies.find((enemy) => enemy.kind === "boss");
+    if (boss && runtime.bossIntroPhase === "dialogue") drawInteractionPrompt(context, boss, adventureText.prompt.continue);
     if (runtime.bossPassageOpen) {
       drawHiddenPassage(context);
       scene.exits.filter((exit) => exit.requiresBossDefeated).forEach((exit) => drawExit(context, exit));
@@ -633,6 +699,22 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
     drawSpriteNpc(context, sprites.princess, PRINCESS, 88);
     if (distance(runtime.player, PRINCESS) < 104) drawInteractionPrompt(context, PRINCESS, adventureText.prompt.talk);
   }
+}
+
+function drawVillageSign(context: CanvasRenderingContext2D, point: Vec2) {
+  context.save();
+  context.fillStyle = "#4a2c1d";
+  context.fillRect(point.x - 5, point.y - 8, 10, 34);
+  context.fillStyle = "#835333";
+  context.fillRect(point.x - 29, point.y - 34, 58, 29);
+  context.fillStyle = "#b9864f";
+  context.fillRect(point.x - 25, point.y - 30, 50, 21);
+  context.fillStyle = "#4f311f";
+  context.fillRect(point.x - 17, point.y - 24, 23, 3);
+  context.fillRect(point.x - 17, point.y - 18, 32, 3);
+  context.fillStyle = "rgba(255,222,151,.3)";
+  context.fillRect(point.x - 23, point.y - 28, 2, 17);
+  context.restore();
 }
 
 function drawInteractionPrompt(context: CanvasRenderingContext2D, point: Vec2, label: string) {

@@ -12,9 +12,9 @@ describe("adventure BGM routing", () => {
     expect(bgmForAdventure(true, "rescue", false)).toBe("hidden");
   });
 
-  it("uses the main theme before unlocking and fades the boss theme after victory", () => {
+  it("uses the main theme before unlocking and keeps the boss room silent until the cutscene ends", () => {
     expect(bgmForAdventure(false, "village", false)).toBe("mainTheme");
-    expect(bgmForAdventure(true, "boss", false)).toBe("finalBattle");
+    expect(bgmForAdventure(true, "boss", false)).toBeNull();
     expect(bgmForAdventure(true, "boss", true)).toBeNull();
     expect(bgmForAdventure(true, "clear", true)).toBeNull();
   });

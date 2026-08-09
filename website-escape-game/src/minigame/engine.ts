@@ -76,6 +76,8 @@ export function createRuntime(scene: AdventureRuntime["scene"], hp = 6, maxHp = 
     bossDefeatTimer: 0,
     bossDefeatPosition: null,
     bossPassageOpen: false,
+    bossIntroPhase: scene === "boss" ? "approach" : "inactive",
+    bossDialogueIndex: 0,
   };
 }
 

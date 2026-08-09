@@ -6,6 +6,7 @@ export type Direction = "down" | "left" | "right" | "up";
 export type EnemyKind = "melee" | "ranged" | "boss";
 export type BossSkillPhase = "idle" | "charging" | "breathing";
 export type MeleeAttackPhase = "moving" | "telegraph" | "dashing";
+export type BossIntroPhase = "inactive" | "approach" | "dialogue" | "battle";
 
 export type Actor = Vec2 & { radius: number; hp: number; maxHp: number };
 export type PlayerActor = Actor & { direction: Direction; moving: boolean; walkTime: number; knockbackVelocity: Vec2; knockbackTimer: number };
@@ -43,6 +44,8 @@ export type AdventureRuntime = {
   bossDefeatTimer: number;
   bossDefeatPosition: Vec2 | null;
   bossPassageOpen: boolean;
+  bossIntroPhase: BossIntroPhase;
+  bossDialogueIndex: number;
 };
 
 export type SceneExit = {

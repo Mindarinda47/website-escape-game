@@ -56,7 +56,7 @@ export const adventureText = {
     rescue: { title: "숨겨진 방", objective: "숨겨진 방의 끝에서 누군가 기다리고 있다." },
     clear: { title: "모험 완료", objective: "전설의 G를 획득했다!" },
   },
-  prompt: { talk: "E : 대화하기", recover: "E : 회복하기", acquire: "E : 획득하기", open: "E : 열기" },
+  prompt: { talk: "E : 대화하기", recover: "E : 회복하기", acquire: "E : 획득하기", open: "E : 열기", inspect: "E : 조사한다", continue: "E : 계속" },
   controls: { move: "이동", attack: "검 공격", interact: "대화/조사", pause: "일시정지", continue: "계속" },
   enemies: { melee: "동굴 박쥐", ranged: "스컬" },
   equipment: { oldSword: "낡은 검", greatSword: "굉장한 검", greatSwordObtained: "굉장한 검을 얻었다!" },
@@ -65,6 +65,7 @@ export const adventureText = {
     sword: "봉인이 걸려 있다. 마을의 누군가에게 상담해볼까...",
   },
   battle: {
+    bossApproach: "왕좌 앞에서 묵직한 숨소리가 들린다.",
     bossCollapse: "드래곤의 형체가 붕괴하기 시작한다.",
     passageOpened: "폭발이 잦아들고 왕좌 뒤편의 숨겨진 통로가 열렸다.",
     passageToast: "왕좌 뒤편에서 숨겨진 통로가 열렸습니다.",
@@ -77,8 +78,16 @@ export const adventureText = {
     blacksmithOwned: "대장장이: 그 검이라면 칠흑 성의 봉인을 풀 수 있을 걸세.",
     blacksmithPrice: (gold: number) => `대장장이: 굉장한 검은 45G라네. 자네 주머니엔 ${gold}G가 있군.`,
     well: "맑은 우물물로 체력이 모두 회복되었다.",
+    villageSign: [
+      "공주가 칠흑의 성에 갇혔습니다. 부디 구해주세요...",
+      "참고로 동굴 안쪽에는 보물이 잠들어있습니다.",
+    ],
     princessThanks: "공주: 저를 구해 주셔서 정말 고마워요, 용사님.",
     princessGift: "공주: 감사의 뜻으로 왕가에 대대로 내려오는 전설의 G를 드리겠습니다.",
+  },
+  bossIntro: {
+    speaker: "드래곤",
+    lines: ["드디어 여기까지 왔군, 용사", "공주와 G는 절대로 넘겨줄 수 없다...", "덤벼라!!"],
   },
   clue: {
     harpToast: "고귀한 유의 하프를 획득했습니다.",

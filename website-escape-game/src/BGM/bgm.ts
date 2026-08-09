@@ -25,9 +25,10 @@ let unlockListenerAttached = false;
 
 export function bgmForAdventure(keyUsed: boolean, checkpoint: Checkpoint, bossDefeated: boolean): BgmId | null {
   if (!keyUsed) return "mainTheme";
+  if (bossDefeated && (checkpoint === "boss" || checkpoint === "clear")) return null;
   if (checkpoint === "village" || checkpoint === "world") return "beforeAdventure";
   if (checkpoint === "dungeon" || checkpoint === "castle-1" || checkpoint === "castle-2") return "dangerousPlace";
-  if (checkpoint === "boss") return bossDefeated ? null : "finalBattle";
+  if (checkpoint === "boss") return null;
   if (checkpoint === "secret" || checkpoint === "rescue") return "hidden";
   return null;
 }

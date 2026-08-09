@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AdGamePage } from "../pages/AdGamePage";
 import { NewsPage } from "../pages/NewsPage";
 import { PortalPage } from "../pages/PortalPage";
@@ -17,7 +17,6 @@ type Props = {
 
 export function BrowserShell({ onEndingAnswer, onReset }: Props) {
   const { state, dispatch } = useGameState();
-  const appRef = useRef<HTMLDivElement>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [resetOpen, setResetOpen] = useState(false);
@@ -32,7 +31,7 @@ export function BrowserShell({ onEndingAnswer, onReset }: Props) {
 
   async function toggleFullscreen() {
     if (document.fullscreenElement) await document.exitFullscreen();
-    else await appRef.current?.requestFullscreen();
+    else await document.documentElement.requestFullscreen();
   }
 
   useEffect(() => {
@@ -63,7 +62,7 @@ export function BrowserShell({ onEndingAnswer, onReset }: Props) {
   }
 
   return (
-    <div ref={appRef} className={`game-app ${state.browser.darkMode ? "dark" : "light"}`}>
+    <div className={`game-app ${state.browser.darkMode ? "dark" : "light"}`}>
       <div className="browser-window">
         <BrowserToolbar onRefresh={() => setRefreshKey((key) => key + 1)} onFind={() => setFindOpen(true)} onReset={() => setResetOpen(true)} onFullscreen={toggleFullscreen} fullscreen={fullscreen} />
         {findOpen && <FindInPage page={state.currentPage} onClose={() => setFindOpen(false)} />}
