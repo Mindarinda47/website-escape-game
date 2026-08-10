@@ -14,6 +14,7 @@ export const initialState: GameState = {
     "game-g": false,
     "game-u": false,
   },
+  letterOrder: ["game-u", "shop-l", "sports-o", "shop-t", "game-g", "news-o"],
   collectedHints: { "shop-last": false, "news-night": false },
   inventory: { water: "missing", key: "missing", points: 0, selectedItem: null },
   shop: { waterCollected: false, cardDetailOpened: false, hiddenStockRevealed: false },

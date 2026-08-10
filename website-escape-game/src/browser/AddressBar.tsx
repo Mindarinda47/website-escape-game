@@ -4,16 +4,16 @@ import { pageAddresses } from "../state/selectors";
 import type { PageId } from "../state/types";
 
 const addressToPage: Record<string, PageId> = {
-  "portal.local": "portal",
-  "portal.local/home": "portal",
-  "portal.local/news": "news",
-  "portal.local/news/today": "news",
-  "portal.local/shop": "shop",
-  "portal.local/sports": "sports",
-  "portal.local/sports/round-12": "sports",
-  "portal.local/sports/r und-12": "sports",
-  "portal.local/ads/hero": "ad-game",
-  "portal.local/game": "ad-game",
+  "gogle.com": "portal",
+  "gogle.com/home": "portal",
+  "gogle.com/news": "news",
+  "gogle.com/news/today": "news",
+  "gogle.com/shop": "shop",
+  "gogle.com/sports": "sports",
+  "gogle.com/sports/round-12": "sports",
+  "gogle.com/sports/r und-12": "sports",
+  "gogle.com/ads/hero": "ad-game",
+  "gogle.com/game": "ad-game",
 };
 
 export function AddressBar() {
@@ -21,7 +21,7 @@ export function AddressBar() {
   const special = state.currentPage === "sports" && state.sports.specialAddressUnlocked;
   const sportsLetterCollected = state.collectedLetters["sports-o"];
   const address = special
-    ? sportsLetterCollected ? "portal.local/sports/r und-12" : "portal.local/sports/rOund-12"
+    ? sportsLetterCollected ? "gogle.com/sports/r und-12" : "gogle.com/sports/rOund-12"
     : pageAddresses[state.currentPage];
   const [value, setValue] = useState(address);
   const [focused, setFocused] = useState(false);
@@ -60,7 +60,7 @@ export function AddressBar() {
       <span className="address-security" aria-hidden="true">⌁</span>
       {showClickableAddress ? (
         <div className="address-inline" role="textbox" tabIndex={0} aria-label="주소창" onClick={beginEditingAddress} onKeyDown={(event) => { if (event.key === "Enter") beginEditingAddress(); }}>
-          <span>portal.local/sports/r</span>
+          <span>gogle.com/sports/r</span>
           {sportsLetterCollected
             ? <span className="address-inline-blank" aria-hidden="true"> </span>
             : <button className="address-inline-letter" aria-label="주소의 대문자 O 수집" onClick={(event) => { event.stopPropagation(); collectSportsLetter(); }}>O</button>}

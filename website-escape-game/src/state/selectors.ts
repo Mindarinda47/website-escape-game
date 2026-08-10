@@ -25,11 +25,11 @@ export const pageTitles: Record<PageId, string> = {
 };
 
 export const pageAddresses: Record<PageId, string> = {
-  portal: "portal.local/home",
-  news: "portal.local/news/today",
-  shop: "portal.local/shop",
-  sports: "portal.local/sports",
-  "ad-game": "portal.local/ads/hero",
+  portal: "gogle.com",
+  news: "gogle.com/news/today",
+  shop: "gogle.com/shop",
+  sports: "gogle.com/sports",
+  "ad-game": "gogle.com/ads/hero",
 };
 
 export function selectPageCompleted(state: GameState, page: ContentPageId): boolean {
@@ -49,8 +49,7 @@ export function selectPageProgress(state: GameState, page: ContentPageId): [numb
 }
 
 export function selectCollectedLetters(state: GameState): LetterClueId[] {
-  const displayOrder: LetterClueId[] = ["game-u", "shop-l", "sports-o", "shop-t", "game-g", "news-o"];
-  return displayOrder.filter((clue) => state.collectedLetters[clue]);
+  return state.letterOrder.filter((clue) => state.collectedLetters[clue]);
 }
 
 export function selectCollectedHints(state: GameState): HintId[] {

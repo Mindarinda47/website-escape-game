@@ -20,6 +20,7 @@ export type GameState = {
   historyIndex: number;
   visitedPages: Record<ContentPageId, boolean>;
   collectedLetters: Record<LetterClueId, boolean>;
+  letterOrder: LetterClueId[];
   collectedHints: Record<HintId, boolean>;
   inventory: {
     water: ItemState;
@@ -76,6 +77,7 @@ export type GameAction =
   | { type: "OPEN_CARD_DETAIL" }
   | { type: "REVEAL_HIDDEN_STOCK" }
   | { type: "COLLECT_LETTER"; clue: LetterClueId }
+  | { type: "REORDER_LETTERS"; order: LetterClueId[] }
   | { type: "COLLECT_HINT"; hint: HintId }
   | { type: "EXTINGUISH_FIRE" }
   | { type: "START_MATCH"; prediction: "home" | "draw" | "away" }
@@ -87,6 +89,7 @@ export type GameAction =
   | { type: "SET_ADVENTURE_HP"; hp: number }
   | { type: "REST_ADVENTURE" }
   | { type: "BUY_GREAT_SWORD" }
+  | { type: "SPEND_ADVENTURE_GOLD"; amount: number }
   | { type: "DEFEAT_BOSS" }
   | { type: "RESCUE_PRINCESS" }
   | { type: "REPLAY_ADVENTURE" }

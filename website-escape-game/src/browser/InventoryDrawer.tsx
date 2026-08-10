@@ -14,6 +14,8 @@ export function InventoryDrawer() {
   const hints = useMemo(() => selectCollectedHints(state), [state]);
   const [autoOpen, setAutoOpen] = useState(false);
   const [highlightedAcquisition, setHighlightedAcquisition] = useState<AcquisitionTarget | null>(null);
+  const [draggedLetter, setDraggedLetter] = useState<LetterClueId | null>(null);
+  const [dragOverLetter, setDragOverLetter] = useState<LetterClueId | null>(null);
   const autoCloseTimerRef = useRef<number | null>(null);
   const previousInventoryRef = useRef({
     water: state.inventory.water,
@@ -72,6 +74,16 @@ export function InventoryDrawer() {
     dispatch({ type: "SELECT_ITEM", item: state.inventory.selectedItem === item ? null : item });
   }
 
+  function reorderLetters(source: LetterClueId, target: LetterClueId) {
+    if (source === target) return;
+    const order = [...state.letterOrder];
+    const sourceIndex = order.indexOf(source);
+    const targetIndex = order.indexOf(target);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    [order[sourceIndex], order[targetIndex]] = [order[targetIndex], order[sourceIndex]];
+    dispatch({ type: "REORDER_LETTERS", order });
+  }
+
   return (
     <aside className={`inventory-drawer ${state.browser.inventoryPinned ? "pinned" : autoOpen ? "auto-open" : ""}`} aria-label="인벤토리와 문자 단서">
       <div className="drawer-handle"><span>{inventoryText.title}</span><kbd>I</kbd></div>
@@ -94,9 +106,30 @@ export function InventoryDrawer() {
         </section>
         <section>
           <div className="drawer-heading"><h2>{inventoryText.lettersTitle}</h2></div>
-          <div className="letter-slots" aria-label="발견한 순서와 무관한 문자 조각">
-            {letters.length === 0 && <span className="empty-letter-slot" aria-label="아직 발견한 문자 단서가 없습니다" />}
-            {letters.map((clue) => <span key={clue} className={`filled ${highlightedAcquisition === clue ? "acquired" : ""}`}>{letterValues[clue]}</span>)}
+          <div className="letter-slots" aria-label="문자 단서 여섯 칸. 발견한 문자는 드래그하여 정렬할 수 있습니다">
+            {state.letterOrder.map((clue, index) => state.collectedLetters[clue] ? (
+              <button
+                key={clue}
+                type="button"
+                draggable
+                aria-label={`${index + 1}번째 문자 단서 ${letterValues[clue]}. 드래그하여 순서 변경`}
+                className={`filled ${highlightedAcquisition === clue ? "acquired" : ""} ${draggedLetter === clue ? "dragging" : ""} ${dragOverLetter === clue ? "drag-over" : ""}`}
+                onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; setDraggedLetter(clue); }}
+                onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverLetter(clue); }}
+                onDragLeave={() => setDragOverLetter((current) => current === clue ? null : current)}
+                onDrop={(event) => { event.preventDefault(); if (draggedLetter) reorderLetters(draggedLetter, clue); setDraggedLetter(null); setDragOverLetter(null); }}
+                onDragEnd={() => { setDraggedLetter(null); setDragOverLetter(null); }}
+              >{letterValues[clue]}</button>
+            ) : (
+              <span
+                key={clue}
+                className={`empty-letter-slot ${dragOverLetter === clue ? "drag-over" : ""}`}
+                aria-label={`${index + 1}번째 빈 문자 단서 슬롯`}
+                onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverLetter(clue); }}
+                onDragLeave={() => setDragOverLetter((current) => current === clue ? null : current)}
+                onDrop={(event) => { event.preventDefault(); if (draggedLetter) reorderLetters(draggedLetter, clue); setDraggedLetter(null); setDragOverLetter(null); }}
+              />
+            ))}
           </div>
         </section>
         {hints.length > 0 && <section className="inventory-hints">

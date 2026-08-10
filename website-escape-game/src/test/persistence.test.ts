@@ -32,5 +32,6 @@ describe("state persistence", () => {
 
     const legacy = loadGameState({ getItem: () => JSON.stringify({ version: 1 }) });
     expect(legacy.collectedHints).toEqual(initialState.collectedHints);
+    expect(legacy.letterOrder).toEqual(initialState.letterOrder);
   });
 });

@@ -48,6 +48,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "COLLECT_LETTER":
       if (state.collectedLetters[action.clue]) return state;
       return { ...state, collectedLetters: { ...state.collectedLetters, [action.clue]: true } };
+    case "REORDER_LETTERS": {
+      const knownLetters = Object.keys(state.collectedLetters);
+      const validOrder = action.order.length === knownLetters.length
+        && new Set(action.order).size === knownLetters.length
+        && action.order.every((clue) => knownLetters.includes(clue));
+      return validOrder ? { ...state, letterOrder: action.order } : state;
+    }
     case "COLLECT_HINT":
       if (state.collectedHints[action.hint]) return state;
       return { ...state, collectedHints: { ...state.collectedHints, [action.hint]: true } };
@@ -136,6 +143,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "BUY_GREAT_SWORD":
       if (state.adGame.greatSwordPurchased || state.adGame.gold < 45) return state;
       return { ...state, adGame: { ...state.adGame, gold: state.adGame.gold - 45, greatSwordPurchased: true } };
+    case "SPEND_ADVENTURE_GOLD":
+      if (action.amount <= 0 || state.adGame.gold < action.amount) return state;
+      return { ...state, adGame: { ...state.adGame, gold: state.adGame.gold - action.amount } };
     case "DEFEAT_BOSS":
       return { ...state, adGame: { ...state.adGame, bossDefeated: true } };
     case "RESCUE_PRINCESS":

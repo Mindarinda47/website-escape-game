@@ -99,4 +99,17 @@ describe("game reducer", () => {
     ]);
     expect(state.collectedHints).toEqual({ "shop-last": true, "news-night": true });
   });
+
+  it("reorders all six letter slots and charges fortune hints each time", () => {
+    const reordered = ["shop-l", "sports-o", "game-g", "news-o", "game-u", "shop-t"] as const;
+    const state = reduce([
+      { type: "REORDER_LETTERS", order: [...reordered] },
+      { type: "GAIN_ADVENTURE_REWARD", exp: 0, gold: 30 },
+      { type: "SPEND_ADVENTURE_GOLD", amount: 15 },
+      { type: "SPEND_ADVENTURE_GOLD", amount: 15 },
+      { type: "SPEND_ADVENTURE_GOLD", amount: 15 },
+    ]);
+    expect(state.letterOrder).toEqual(reordered);
+    expect(state.adGame.gold).toBe(0);
+  });
 });

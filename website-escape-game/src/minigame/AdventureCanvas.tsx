@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import blacksmithSpriteSource from "../image/game/blacksmith.png";
+import fortuneTellerSpriteSource from "../image/fortune-teller-grandmother-sprite-128.png";
 import heroSpriteSource from "../image/game/hero-sprites.png";
 import princessSpriteSource from "../image/game/princess-left.png";
 import dragonBossSpriteSource from "../image/dragon-boss-front-sprite-768.png";
@@ -41,6 +42,7 @@ import { sceneCopy, scenes } from "./scenes";
 import type { AdventureRuntime, DefeatEffect, EnemyActor, Rect, SceneExit, Vec2 } from "./types";
 
 const BLACKSMITH = { x: 905, y: 410 };
+const FORTUNE_TELLER = { x: 135, y: 410 };
 const VILLAGE_WELL = { x: 520, y: 500 };
 const VILLAGE_SIGN = { x: 680, y: 580 };
 const SECRET_ALTAR = { x: 1060, y: 450 };
@@ -63,6 +65,7 @@ type SceneTransitionState = {
 type SpriteSet = {
   hero: HTMLImageElement | null;
   blacksmith: HTMLImageElement | null;
+  fortuneTeller: HTMLImageElement | null;
   princess: HTMLImageElement | null;
   melee: HTMLImageElement | null;
   ranged: HTMLImageElement | null;
@@ -75,7 +78,7 @@ type SpriteSet = {
 export function AdventureCanvas() {
   const { state, dispatch, notify } = useGameState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const spritesRef = useRef<SpriteSet>({ hero: null, blacksmith: null, princess: null, melee: null, ranged: null, boss: null, harp: null, oldSword: null, greatSword: null });
+  const spritesRef = useRef<SpriteSet>({ hero: null, blacksmith: null, fortuneTeller: null, princess: null, melee: null, ranged: null, boss: null, harp: null, oldSword: null, greatSword: null });
   const stateRef = useRef(state);
   const notifyRef = useRef(notify);
   const pendingSpawnRef = useRef<Vec2 | null>(null);
@@ -86,6 +89,9 @@ export function AdventureCanvas() {
   const interactHeldRef = useRef(false);
   const transitionLockedRef = useRef(false);
   const princessDialogueRef = useRef(0);
+  const blacksmithDialogueRef = useRef(false);
+  const fortuneOpenRef = useRef(false);
+  const fortuneGoldRef = useRef(state.adGame.gold);
   const villageSignDialogueRef = useRef(0);
   const levelUpTimerRef = useRef(0);
   const previousLevelRef = useRef(state.adGame.level);
@@ -94,12 +100,54 @@ export function AdventureCanvas() {
   const sceneTransitionRef = useRef<SceneTransitionState>({ phase: "idle", timer: 0, exit: null });
   const [paused, setPaused] = useState(false);
   const [showSwordReward, setShowSwordReward] = useState(false);
+  const [fortuneOpen, setFortuneOpen] = useState(false);
+  const [fortuneSelection, setFortuneSelection] = useState(0);
+  const [fortuneMessage, setFortuneMessage] = useState<string>(adventureText.npc.fortuneTeller.intro);
   const [status, setStatus] = useState(sceneCopy[state.adGame.checkpoint].objective);
 
   useEffect(() => {
     stateRef.current = state;
+    fortuneGoldRef.current = state.adGame.gold;
     notifyRef.current = notify;
   }, [notify, state]);
+
+  useEffect(() => {
+    fortuneOpenRef.current = fortuneOpen;
+  }, [fortuneOpen]);
+
+  const closeFortuneDialogue = useCallback(() => {
+    setFortuneOpen(false);
+    setStatus(sceneCopy.village.objective);
+  }, []);
+
+  const askFortune = useCallback((index: number) => {
+    const option = adventureText.npc.fortuneTeller.options[index];
+    if (!option) return;
+    if (fortuneGoldRef.current < 15) {
+      setFortuneMessage(adventureText.npc.fortuneTeller.insufficientGold);
+      return;
+    }
+    fortuneGoldRef.current -= 15;
+    dispatch({ type: "SPEND_ADVENTURE_GOLD", amount: 15 });
+    setFortuneMessage(`할머니: ${option.answer}`);
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!fortuneOpen) return;
+    const onFortuneKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if (!["arrowup", "arrowdown", "e", "enter", "escape"].includes(key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.repeat) return;
+      if (key === "arrowup") setFortuneSelection((current) => (current + adventureText.npc.fortuneTeller.options.length - 1) % adventureText.npc.fortuneTeller.options.length);
+      else if (key === "arrowdown") setFortuneSelection((current) => (current + 1) % adventureText.npc.fortuneTeller.options.length);
+      else if (key === "escape") closeFortuneDialogue();
+      else askFortune(fortuneSelection);
+    };
+    window.addEventListener("keydown", onFortuneKeyDown, true);
+    return () => window.removeEventListener("keydown", onFortuneKeyDown, true);
+  }, [askFortune, closeFortuneDialogue, fortuneOpen, fortuneSelection]);
 
   useEffect(() => {
     const load = (key: keyof SpriteSet, source: string) => {
@@ -109,6 +157,7 @@ export function AdventureCanvas() {
     };
     load("hero", heroSpriteSource);
     load("blacksmith", blacksmithSpriteSource);
+    load("fortuneTeller", fortuneTellerSpriteSource);
     load("princess", princessSpriteSource);
     load("melee", meleeBatSpriteSource);
     load("ranged", rangedSkullSpriteSource);
@@ -133,7 +182,9 @@ export function AdventureCanvas() {
       transitionLockedRef.current = true;
     } else transitionLockedRef.current = false;
     princessDialogueRef.current = 0;
+    blacksmithDialogueRef.current = false;
     villageSignDialogueRef.current = 0;
+    setFortuneOpen(false);
     setStatus(state.adGame.checkpoint === "boss" && !progress.bossDefeated ? adventureText.battle.bossApproach : sceneCopy[state.adGame.checkpoint].objective);
     stopSfx("dragonBreathCharge");
     stopSfx("dragonFireBeam");
@@ -174,6 +225,7 @@ export function AdventureCanvas() {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
       if (target.matches("input, textarea, select, [contenteditable=true]")) return;
+      if (fortuneOpenRef.current) return;
       const key = event.key.toLowerCase();
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
       if (key === "p") setPaused((value) => !value);
@@ -271,7 +323,21 @@ export function AdventureCanvas() {
         return;
       }
       if (runtime.scene === "village") {
+        if (distance(runtime.player, FORTUNE_TELLER) < 78) {
+          fortuneGoldRef.current = stateRef.current.adGame.gold;
+          setFortuneSelection(0);
+          setFortuneMessage(adventureText.npc.fortuneTeller.intro);
+          setFortuneOpen(true);
+          keysRef.current.delete("e");
+          return;
+        }
         if (distance(runtime.player, BLACKSMITH) < 78) {
+          if (blacksmithDialogueRef.current) {
+            blacksmithDialogueRef.current = false;
+            setStatus(sceneCopy.village.objective);
+            return;
+          }
+          blacksmithDialogueRef.current = true;
           const progress = stateRef.current.adGame;
           if (progress.greatSwordPurchased) setStatus(adventureText.npc.blacksmithOwned);
           else if (progress.gold >= 45) {
@@ -391,11 +457,13 @@ export function AdventureCanvas() {
             const bossDialogueActive = runtime.scene === "boss" && runtime.bossIntroPhase === "dialogue";
             const bossCombatActive = runtime.scene !== "boss" || runtime.bossIntroPhase === "battle";
             const signDialogueActive = runtime.scene === "village" && villageSignDialogueRef.current > 0;
+            const blacksmithDialogueActive = runtime.scene === "village" && blacksmithDialogueRef.current;
+            const fortuneDialogueActive = runtime.scene === "village" && fortuneOpenRef.current;
             const obstacles = adventureObstacles(runtime.scene);
-            if (!rescueDialogueActive && !bossDialogueActive && bossCombatActive && !signDialogueActive && attackPressed) attack(runtime);
+            if (!rescueDialogueActive && !bossDialogueActive && bossCombatActive && !signDialogueActive && !blacksmithDialogueActive && !fortuneDialogueActive && attackPressed) attack(runtime);
             const attackLocked = runtime.attackTimer > 0;
             const knockbackLocked = updatePlayerKnockback(runtime, delta, obstacles);
-            if (rescueDialogueActive || bossDialogueActive || signDialogueActive || attackLocked || knockbackLocked) runtime.player.moving = false;
+            if (rescueDialogueActive || bossDialogueActive || signDialogueActive || blacksmithDialogueActive || fortuneDialogueActive || attackLocked || knockbackLocked) runtime.player.moving = false;
             else movePlayer(runtime, keysRef.current, delta, obstacles, RUN_SPEED_MULTIPLIER);
 
             if (["dungeon", "castle-1", "castle-2", "boss"].includes(runtime.scene) && bossCombatActive) {
@@ -443,7 +511,7 @@ export function AdventureCanvas() {
                 setStatus(adventureText.battle.respawn);
               }
             }
-            if (!rescueDialogueActive && !bossDialogueActive && !signDialogueActive) processExits(runtime);
+            if (!rescueDialogueActive && !bossDialogueActive && !signDialogueActive && !blacksmithDialogueActive && !fortuneDialogueActive) processExits(runtime);
           }
         }
       }
@@ -454,11 +522,13 @@ export function AdventureCanvas() {
         && currentRuntime.attackTimer <= 0
         && currentRuntime.bossIntroPhase !== "dialogue"
         && villageSignDialogueRef.current === 0
+        && !blacksmithDialogueRef.current
+        && !fortuneOpenRef.current
         && currentRuntime.player.moving
         ? footstepSurface(currentRuntime.scene)
         : null;
       setFootsteps(footsteps);
-      draw(canvasContext, currentRuntime, paused, spritesRef.current, stateRef.current.adGame.greatSwordPurchased, stateRef.current.collectedLetters["game-u"], stateRef.current.collectedHints, levelUpTimerRef.current, sceneTransitionRef.current);
+      draw(canvasContext, currentRuntime, paused, spritesRef.current, stateRef.current.adGame.greatSwordPurchased, stateRef.current.collectedLetters["game-u"], stateRef.current.collectedHints, levelUpTimerRef.current, sceneTransitionRef.current, blacksmithDialogueRef.current, fortuneOpenRef.current, princessDialogueRef.current > 0);
       frame = requestAnimationFrame(update);
     }
     frame = requestAnimationFrame(update);
@@ -483,6 +553,25 @@ export function AdventureCanvas() {
           <img src={state.adGame.greatSwordPurchased ? amazingSwordIcon : oldSwordIcon} alt="" />
         </div>
         {showSwordReward && <div className="great-sword-reward" aria-live="polite"><span /><img src={amazingSwordIcon} alt={adventureText.equipment.greatSword} /><strong>{adventureText.equipment.greatSwordObtained}</strong></div>}
+        {fortuneOpen && (
+          <section className="fortune-dialogue" role="dialog" aria-modal="true" aria-labelledby="fortune-dialogue-title">
+            <header><strong id="fortune-dialogue-title">{adventureText.npc.fortuneTeller.name}</strong><span>복채 15G · 보유 {state.adGame.gold}G</span></header>
+            <p>{fortuneMessage}</p>
+            <small>{adventureText.npc.fortuneTeller.menuGuide}</small>
+            <div className="fortune-options">
+              {adventureText.npc.fortuneTeller.options.map((option, index) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  className={fortuneSelection === index ? "selected" : ""}
+                  onMouseEnter={() => setFortuneSelection(index)}
+                  onClick={() => askFortune(index)}
+                ><span>{index + 1}</span>{option.label}<em>15G</em></button>
+              ))}
+            </div>
+            <button type="button" className="fortune-close" onClick={closeFortuneDialogue}>{adventureText.npc.fortuneTeller.close}</button>
+          </section>
+        )}
         <div className="rpg-dialogue" aria-live="polite">
           <span>{runtimeRef.current.bossIntroPhase === "dialogue" ? adventureText.bossIntro.speaker : sceneCopy[state.adGame.checkpoint].title}</span>
           <p>{status}</p>
@@ -542,7 +631,7 @@ function cameraFor(runtime: AdventureRuntime): Vec2 {
   };
 }
 
-function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paused: boolean, sprites: SpriteSet, hasGreatSword: boolean, hasU: boolean, collectedHints: Record<HintId, boolean>, levelUpTimer: number, sceneTransition: SceneTransitionState) {
+function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paused: boolean, sprites: SpriteSet, hasGreatSword: boolean, hasU: boolean, collectedHints: Record<HintId, boolean>, levelUpTimer: number, sceneTransition: SceneTransitionState, blacksmithDialogueActive: boolean, fortuneDialogueActive: boolean, princessDialogueActive: boolean) {
   const camera = cameraFor(runtime);
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
@@ -550,7 +639,7 @@ function draw(context: CanvasRenderingContext2D, runtime: AdventureRuntime, paus
   context.save();
   context.translate(-camera.x, -camera.y);
   drawGround(context, runtime.scene);
-  drawMapObjects(context, runtime, sprites, hasU, collectedHints);
+  drawMapObjects(context, runtime, sprites, hasU, collectedHints, blacksmithDialogueActive, fortuneDialogueActive, princessDialogueActive);
   drawBossSkill(context, runtime);
   drawBossDefeatEffect(context, runtime);
   runtime.projectiles.forEach((projectile) => {
@@ -650,7 +739,7 @@ function drawPixelPath(context: CanvasRenderingContext2D, points: Vec2[], width:
   points.slice(1).forEach((point) => context.lineTo(point.x, point.y)); context.stroke();
 }
 
-function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRuntime, sprites: SpriteSet, hasU: boolean, collectedHints: Record<HintId, boolean>) {
+function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRuntime, sprites: SpriteSet, hasU: boolean, collectedHints: Record<HintId, boolean>, blacksmithDialogueActive: boolean, fortuneDialogueActive: boolean, princessDialogueActive: boolean) {
   const scene = scenes[runtime.scene];
   scene.obstacles.forEach((obstacle, index) => {
     if (scene.ground === "village" && pointInRect(VILLAGE_WELL, obstacle)) return;
@@ -663,7 +752,9 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
 
   if (runtime.scene === "village") {
     drawSpriteNpc(context, sprites.blacksmith, BLACKSMITH, 82);
-    if (distance(runtime.player, BLACKSMITH) < 92) drawInteractionPrompt(context, BLACKSMITH, adventureText.prompt.talk);
+    if (!blacksmithDialogueActive && distance(runtime.player, BLACKSMITH) < 92) drawInteractionPrompt(context, BLACKSMITH, adventureText.prompt.talk);
+    drawSpriteNpc(context, sprites.fortuneTeller, FORTUNE_TELLER, 82);
+    if (!fortuneDialogueActive && distance(runtime.player, FORTUNE_TELLER) < 92) drawInteractionPrompt(context, FORTUNE_TELLER, adventureText.prompt.talk);
     drawWell(context, VILLAGE_WELL);
     if (distance(runtime.player, VILLAGE_WELL) < 84) drawInteractionPrompt(context, VILLAGE_WELL, adventureText.prompt.recover);
     drawVillageSign(context, VILLAGE_SIGN);
@@ -697,7 +788,7 @@ function drawMapObjects(context: CanvasRenderingContext2D, runtime: AdventureRun
   if (runtime.scene === "rescue") {
     context.fillStyle = "rgba(255,225,158,.13)"; context.beginPath(); context.arc(PRINCESS.x, PRINCESS.y, 95, 0, Math.PI * 2); context.fill();
     drawSpriteNpc(context, sprites.princess, PRINCESS, 88);
-    if (distance(runtime.player, PRINCESS) < 104) drawInteractionPrompt(context, PRINCESS, adventureText.prompt.talk);
+    if (!princessDialogueActive && distance(runtime.player, PRINCESS) < 104) drawInteractionPrompt(context, PRINCESS, adventureText.prompt.talk);
   }
 }
 

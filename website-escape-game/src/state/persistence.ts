@@ -1,5 +1,5 @@
 import { initialState } from "./initialState";
-import type { Checkpoint, GameState } from "./types";
+import type { Checkpoint, GameState, LetterClueId } from "./types";
 
 export const STORAGE_KEY = "logout-game-state-v1";
 const checkpoints: Checkpoint[] = ["village", "world", "dungeon", "castle-1", "castle-2", "boss", "secret", "rescue", "clear"];
@@ -10,11 +10,19 @@ export function loadGameState(storage: Pick<Storage, "getItem"> = localStorage):
     if (!raw) return initialState;
     const parsed = JSON.parse(raw) as Partial<GameState>;
     if (parsed.version !== 1) return initialState;
+    const knownLetters = Object.keys(initialState.collectedLetters) as LetterClueId[];
+    const letterOrder = Array.isArray(parsed.letterOrder)
+      && parsed.letterOrder.length === knownLetters.length
+      && new Set(parsed.letterOrder).size === knownLetters.length
+      && parsed.letterOrder.every((clue) => knownLetters.includes(clue))
+      ? parsed.letterOrder
+      : initialState.letterOrder;
     return {
       ...initialState,
       ...parsed,
       visitedPages: { ...initialState.visitedPages, ...parsed.visitedPages },
       collectedLetters: { ...initialState.collectedLetters, ...parsed.collectedLetters },
+      letterOrder,
       collectedHints: { ...initialState.collectedHints, ...parsed.collectedHints },
       inventory: { ...initialState.inventory, ...parsed.inventory, selectedItem: null },
       shop: { ...initialState.shop, ...parsed.shop },
