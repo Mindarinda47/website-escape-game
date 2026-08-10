@@ -9,6 +9,7 @@
 - 🧩 [완벽 공략집](website-escape-game/submission-docs/공략집.pdf) — 스포일러 포함
 
 별도 설치 없이 데스크톱 Chrome 또는 Edge에서 플레이할 수 있습니다.
+
 ※실제 브라우저의 다크모드는 OFF로 해주십시오.
 
 ## 조작
