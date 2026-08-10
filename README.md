@@ -5,7 +5,6 @@
 ## 바로가기
 
 - 🎮 **[게임 바로 플레이하기](https://mindarinda47.github.io/website-escape-game/)**
-- 🤖 [AI 활용 기술 문서](website-escape-game/submission-docs/AI활용기술문서_이종민.pdf)
 - 🧩 [완벽 공략집](website-escape-game/submission-docs/공략집.pdf) — 스포일러 포함
 
 별도 설치 없이 데스크톱 Chrome 또는 Edge에서 플레이할 수 있습니다.
